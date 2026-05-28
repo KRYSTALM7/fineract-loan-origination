@@ -59,6 +59,10 @@ jobs:
 
       - name: Build and run tests
         run: ./mvnw clean verify
+        env:
+          DB_USERNAME: los_user
+          DB_PASSWORD: los_password
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/los_db
 
       - name: Run Apache RAT license check
         run: ./mvnw apache-rat:check

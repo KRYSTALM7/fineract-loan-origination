@@ -59,6 +59,7 @@ under the License.
         <testcontainers.version>1.20.4</testcontainers.version>
         <cyclonedx.version>2.9.0</cyclonedx.version>
         <rat.version>0.16.1</rat.version>
+        <spotless.version>2.43.0</spotless.version>
     </properties>
 
     <dependencies>
@@ -224,6 +225,29 @@ under the License.
                         <exclude>**/docker/**</exclude>
                     </excludes>
                 </configuration>
+            </plugin>
+
+            <!-- Spotless code style enforcement -->
+            <plugin>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
+                <version>${spotless.version}</version>
+                <configuration>
+                    <java>
+                        <googleJavaFormat/>
+                        <removeUnusedImports/>
+                        <trimTrailingWhitespace/>
+                        <endWithNewline/>
+                    </java>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <phase>verify</phase>
+                    </execution>
+                </executions>
             </plugin>
 
         </plugins>
