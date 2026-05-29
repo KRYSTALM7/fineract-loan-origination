@@ -21,4 +21,9 @@
 **/build/**
 .rat-excludes
 LICENSE
+LICENSE.md
 *.jar
+.gitignore
+.gitattributes
+**/.gitignore
+**/.gitattributes
