@@ -223,6 +223,8 @@ under the License.
                         <exclude>**/postman/**</exclude>
                         <exclude>**/docs/**</exclude>
                         <exclude>**/docker/**</exclude>
+                        <exclude>**/docs/**</exclude>
+                        <exclude>**/*.md</exclude>
                     </excludes>
                 </configuration>
             </plugin>
