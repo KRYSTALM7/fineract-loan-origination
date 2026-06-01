@@ -37,7 +37,7 @@ under the License.
     <packaging>jar</packaging>
 
     <name>fineract-loan-origination</name>
-    <description>Loan Origination POC Service for Apache Fineract (GSoC 2026 - FINERACT-2442)</description>
+    <description>Loan Origination POC Service for Apache Fineract</description>
     <url>https://fineract.apache.org</url>
 
     <licenses>
