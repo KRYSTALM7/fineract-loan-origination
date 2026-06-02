@@ -1,0 +1,39 @@
+<!--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements. See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership. The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License. You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied. See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
+# ADR-001: Build LOS as External Standalone Service
+
+
+## Context
+The Fineract community needs a Loan Origination System. Two options exist:
+build inside Fineract core, or build as a standalone external service.
+Building inside core risks collisions with ongoing development and makes
+the POC hard to demo independently.
+
+## Decision
+Build as a fully external standalone Spring Boot service that communicates
+with Fineract exclusively through its published REST APIs. No changes are
+made to Fineract core modules, no Liquibase migrations are added to the
+Fineract repository, and no Fineract internal classes are extended.
+
+## Consequences
+- Zero risk of collision with ongoing Fineract core development
+- Fully demonstrable without depending on unreleased Fineract features
+- Clear integration path once FINERACT-2418 is resolved
+- Independently deployable and testable
+- Any version of Fineract can run alongside this service unchanged
