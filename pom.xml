@@ -58,7 +58,7 @@ under the License.
         <springdoc.version>2.8.6</springdoc.version>
         <testcontainers.version>1.20.4</testcontainers.version>
         <cyclonedx.version>2.9.1</cyclonedx.version>
-        <rat.version>0.16.1</rat.version>
+        <rat.version>0.18</rat.version>
         <spotless.version>2.43.0</spotless.version>
     </properties>
 
