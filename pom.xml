@@ -59,7 +59,7 @@ under the License.
         <testcontainers.version>1.21.4</testcontainers.version>
         <cyclonedx.version>2.9.1</cyclonedx.version>
         <rat.version>0.18</rat.version>
-        <spotless.version>2.43.0</spotless.version>
+        <spotless.version>3.6.0</spotless.version>
     </properties>
 
     <dependencies>
