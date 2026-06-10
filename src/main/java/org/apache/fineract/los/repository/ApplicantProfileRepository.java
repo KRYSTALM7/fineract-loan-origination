@@ -48,13 +48,14 @@ public interface ApplicantProfileRepository extends JpaRepository<ApplicantProfi
    * Finds the applicant profile by application ID and tenant.
    *
    * <p>Used when only the application ID is available without loading the full application entity
-   * first.
+   * first. Traverses the join to {@link LoanApplication} for tenant isolation.
    *
    * @param applicationId internal application ID
    * @param tenantId institution identifier
    * @return the applicant profile if found
    */
-  Optional<ApplicantProfile> findByApplicationIdAndTenantId(Long applicationId, String tenantId);
+  Optional<ApplicantProfile> findByApplication_IdAndApplication_TenantId(
+      Long applicationId, String tenantId);
 
   /**
    * Checks whether a profile already exists for an application.

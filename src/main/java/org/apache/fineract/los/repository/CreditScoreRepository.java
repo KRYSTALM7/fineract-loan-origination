@@ -52,13 +52,14 @@ public interface CreditScoreRepository extends JpaRepository<CreditScore, Long> 
    * Finds the credit score by application ID and tenant.
    *
    * <p>Used when only the application ID is available without loading the full application entity
-   * first. This is the pattern used by the caching layer.
+   * first. Traverses the join to {@link LoanApplication} for tenant isolation.
    *
    * @param applicationId internal application ID
    * @param tenantId institution identifier
    * @return the credit score if found
    */
-  Optional<CreditScore> findByApplicationIdAndTenantId(Long applicationId, String tenantId);
+  Optional<CreditScore> findByApplication_IdAndApplication_TenantId(
+      Long applicationId, String tenantId);
 
   /**
    * Checks whether a credit score exists for an application.
@@ -71,14 +72,15 @@ public interface CreditScoreRepository extends JpaRepository<CreditScore, Long> 
   boolean existsByApplication(LoanApplication application);
 
   /**
-   * Counts applications by risk category for a tenant.
+   * Counts credit scores by risk category for a tenant.
    *
    * <p>Used for portfolio-level risk reporting — how many HIGH/MEDIUM/LOW risk applications exist
-   * across the institution's portfolio.
+   * across the institution's portfolio. Traverses the join to {@link LoanApplication} for tenant
+   * scoping.
    *
    * @param riskCategory risk classification to count
    * @param tenantId institution identifier
-   * @return count of applications in the risk category
+   * @return count of scores in the risk category for the tenant
    */
-  long countByRiskCategoryAndTenantId(RiskCategory riskCategory, String tenantId);
+  long countByRiskCategoryAndApplication_TenantId(RiskCategory riskCategory, String tenantId);
 }

@@ -26,8 +26,6 @@ import org.apache.fineract.los.domain.enums.LoanApplicationStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -127,24 +125,16 @@ public interface LoanApplicationRepository extends JpaRepository<LoanApplication
   long countByStatusAndTenantId(LoanApplicationStatus status, String tenantId);
 
   /**
-   * Returns applications assigned to a specific loan officer.
+   * Returns applications assigned to a specific loan officer for a given tenant.
    *
-   * <p>Used to build officer-specific work queues showing only applications assigned to the
-   * authenticated user.
+   * <p>Uses Spring Data JPA method derivation — no custom query needed since both fields
+   * (assignedOfficer, tenantId) live directly on {@link LoanApplication}.
    *
    * @param assignedOfficer officer identifier from JWT claims
    * @param tenantId institution identifier
    * @param pageable pagination parameters
    * @return paginated applications for the officer
    */
-  @Query(
-      "SELECT la FROM LoanApplication la "
-          + "JOIN ApprovalStage ast ON ast.application = la "
-          + "WHERE ast.assignedOfficer = :assignedOfficer "
-          + "AND la.tenantId = :tenantId "
-          + "AND la.status = 'UNDER_REVIEW'")
   Page<LoanApplication> findByAssignedOfficerAndTenantId(
-      @Param("assignedOfficer") String assignedOfficer,
-      @Param("tenantId") String tenantId,
-      Pageable pageable);
+      String assignedOfficer, String tenantId, Pageable pageable);
 }
