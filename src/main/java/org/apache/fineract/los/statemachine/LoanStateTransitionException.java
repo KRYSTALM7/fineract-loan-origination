@@ -19,6 +19,7 @@
 
 package org.apache.fineract.los.statemachine;
 
+import org.apache.fineract.los.exception.LosErrorConstants;
 import org.apache.fineract.los.domain.enums.LoanApplicationStatus;
 
 /**
@@ -47,11 +48,9 @@ public class LoanStateTransitionException extends RuntimeException {
    */
   public LoanStateTransitionException(
       final LoanApplicationStatus fromStatus, final LoanApplicationStatus toStatus) {
-    super(
-        String.format(
-            "Invalid state transition: cannot move from [%s] to [%s]. "
-                + "Check LoanOriginationStateMachine for valid transitions.",
-            fromStatus, toStatus));
+
+    super(String.format(LosErrorConstants.MSG_INVALID_TRANSITION_TEMPLATE, fromStatus, toStatus));
+
     this.fromStatus = fromStatus;
     this.toStatus = toStatus;
   }

@@ -22,6 +22,7 @@ package org.apache.fineract.los.statemachine;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.fineract.los.exception.LosErrorConstants;
 import org.apache.fineract.los.domain.LoanApplication;
 import org.apache.fineract.los.domain.enums.LoanApplicationStatus;
 import org.springframework.stereotype.Component;
@@ -128,7 +129,7 @@ public class LoanOriginationStateMachine {
    */
   public Set<LoanApplicationStatus> permittedTransitions(final LoanApplication application) {
     if (application == null) {
-      throw new IllegalArgumentException("Application must not be null");
+      throw new IllegalArgumentException(LosErrorConstants.MSG_APPLICATION_NULL);
     }
     return validator.permittedTransitions(application.getStatus());
   }
@@ -143,7 +144,7 @@ public class LoanOriginationStateMachine {
    */
   public boolean isTerminal(final LoanApplication application) {
     if (application == null) {
-      throw new IllegalArgumentException("Application must not be null");
+      throw new IllegalArgumentException(LosErrorConstants.MSG_APPLICATION_NULL);
     }
     return application.getStatus().isTerminal();
   }
@@ -158,15 +159,17 @@ public class LoanOriginationStateMachine {
    */
   private void validateInputs(
       final LoanApplication application, final LoanApplicationStatus targetStatus) {
+
     if (application == null) {
-      throw new IllegalArgumentException("Application must not be null");
+      throw new IllegalArgumentException(LosErrorConstants.MSG_APPLICATION_NULL);
     }
+
     if (targetStatus == null) {
-      throw new IllegalArgumentException("Target status must not be null");
+      throw new IllegalArgumentException(LosErrorConstants.MSG_TARGET_STATUS_NULL);
     }
+
     if (application.getStatus() == null) {
-      throw new IllegalStateException(
-          "Application status must not be null — " + "ensure entity is properly initialised");
+      throw new IllegalStateException(LosErrorConstants.MSG_STATUS_UNINITIALISED);
     }
   }
 
@@ -182,6 +185,7 @@ public class LoanOriginationStateMachine {
    */
   private void guardAgainstTerminalState(
       final LoanApplication application, final LoanApplicationStatus currentStatus) {
+
     if (currentStatus.isTerminal()) {
       log.error(
           "Transition attempted on terminal application: "
@@ -190,11 +194,12 @@ public class LoanOriginationStateMachine {
           application.getApplicationRef(),
           application.getTenantId(),
           currentStatus);
+
       throw new IllegalStateException(
           String.format(
-              "Application [%s] is in terminal state [%s]. "
-                  + "No further transitions are permitted.",
-              application.getApplicationRef(), currentStatus));
+              LosErrorConstants.MSG_TERMINAL_STATE_TEMPLATE,
+              application.getApplicationRef(),
+              currentStatus));
     }
   }
 }
