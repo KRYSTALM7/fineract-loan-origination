@@ -19,8 +19,8 @@
 
 package org.apache.fineract.los.statemachine;
 
-import org.apache.fineract.los.exception.LosErrorConstants;
 import org.apache.fineract.los.domain.enums.LoanApplicationStatus;
+import org.apache.fineract.los.exception.LosErrorConstants;
 
 /**
  * Thrown when an invalid state transition is attempted on a {@link

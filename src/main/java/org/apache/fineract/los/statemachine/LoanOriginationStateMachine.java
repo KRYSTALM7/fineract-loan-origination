@@ -22,9 +22,9 @@ package org.apache.fineract.los.statemachine;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.fineract.los.exception.LosErrorConstants;
 import org.apache.fineract.los.domain.LoanApplication;
 import org.apache.fineract.los.domain.enums.LoanApplicationStatus;
+import org.apache.fineract.los.exception.LosErrorConstants;
 import org.springframework.stereotype.Component;
 
 /**
