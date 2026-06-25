@@ -57,88 +57,85 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class EmploymentStabilityFactor implements ScoringFactor {
 
-    private static final String FACTOR_NAME = "employment-stability";
+  private static final String FACTOR_NAME = "employment-stability";
 
-    private final ScoringWeightsProperties weights;
+  private final ScoringWeightsProperties weights;
 
-    @Override
-    public FactorScore score(ApplicantScoringProfile profile) {
-        final int max = maxPoints();
+  @Override
+  public FactorScore score(ApplicantScoringProfile profile) {
+    final int max = maxPoints();
 
-        String status = profile.getEmploymentStatus();
-        Integer durationMonths = profile.getEmploymentDurationMonths();
+    String status = profile.getEmploymentStatus();
+    Integer durationMonths = profile.getEmploymentDurationMonths();
 
-        // Unemployed or missing status — no employment stability
-        if (status == null || status.isBlank() || "UNEMPLOYED".equalsIgnoreCase(status.trim())) {
-            return FactorScore.builder()
-                    .points(0)
-                    .maxPoints(max)
-                    .explanation("Applicant is unemployed or employment status is unknown.")
-                    .build();
-        }
-
-        double statusMultiplier = resolveStatusMultiplier(status.trim().toUpperCase());
-        int months = (durationMonths != null && durationMonths > 0) ? durationMonths : 0;
-
-        int durationPoints;
-        String durationLabel;
-
-        if (months >= 24) {
-            durationPoints = max;
-            durationLabel = months + " months — long-term stable employment.";
-        } else if (months >= 12) {
-            durationPoints = (int) Math.round(max * 0.75);
-            durationLabel = months + " months — established employment.";
-        } else if (months >= 6) {
-            durationPoints = (int) Math.round(max * 0.50);
-            durationLabel = months + " months — moderate employment tenure.";
-        } else if (months >= 3) {
-            durationPoints = (int) Math.round(max * 0.25);
-            durationLabel = months + " months — short employment tenure.";
-        } else {
-            durationPoints = 0;
-            durationLabel = months + " months — insufficient employment history.";
-        }
-
-        int points = Math.min((int) Math.floor(statusMultiplier * durationPoints), max);
-
-        String explanation = String.format(
-                "%s applicant with %s Status multiplier: %.0f%%.",
-                formatStatus(status), durationLabel, statusMultiplier * 100);
-
-        return FactorScore.builder()
-                .points(points)
-                .maxPoints(max)
-                .explanation(explanation)
-                .build();
+    // Unemployed or missing status — no employment stability
+    if (status == null || status.isBlank() || "UNEMPLOYED".equalsIgnoreCase(status.trim())) {
+      return FactorScore.builder()
+          .points(0)
+          .maxPoints(max)
+          .explanation("Applicant is unemployed or employment status is unknown.")
+          .build();
     }
 
-    private double resolveStatusMultiplier(String status) {
-        return switch (status) {
-            case "EMPLOYED"      -> 1.0;
-            case "SELF_EMPLOYED" -> 0.8;
-            case "INFORMAL"      -> 0.6;
-            default              -> 0.0;
-        };
+    double statusMultiplier = resolveStatusMultiplier(status.trim().toUpperCase());
+    int months = (durationMonths != null && durationMonths > 0) ? durationMonths : 0;
+
+    int durationPoints;
+    String durationLabel;
+
+    if (months >= 24) {
+      durationPoints = max;
+      durationLabel = months + " months — long-term stable employment.";
+    } else if (months >= 12) {
+      durationPoints = (int) Math.round(max * 0.75);
+      durationLabel = months + " months — established employment.";
+    } else if (months >= 6) {
+      durationPoints = (int) Math.round(max * 0.50);
+      durationLabel = months + " months — moderate employment tenure.";
+    } else if (months >= 3) {
+      durationPoints = (int) Math.round(max * 0.25);
+      durationLabel = months + " months — short employment tenure.";
+    } else {
+      durationPoints = 0;
+      durationLabel = months + " months — insufficient employment history.";
     }
 
-    private String formatStatus(String status) {
-        if (status == null) return "Unknown";
-        return switch (status.trim().toUpperCase()) {
-            case "EMPLOYED"      -> "Formally employed";
-            case "SELF_EMPLOYED" -> "Self-employed";
-            case "INFORMAL"      -> "Informally employed";
-            default              -> status;
-        };
-    }
+    int points = Math.min((int) Math.floor(statusMultiplier * durationPoints), max);
 
-    @Override
-    public int maxPoints() {
-        return weights.getEmploymentStability();
-    }
+    String explanation =
+        String.format(
+            "%s applicant with %s Status multiplier: %.0f%%.",
+            formatStatus(status), durationLabel, statusMultiplier * 100);
 
-    @Override
-    public String factorName() {
-        return FACTOR_NAME;
-    }
+    return FactorScore.builder().points(points).maxPoints(max).explanation(explanation).build();
+  }
+
+  private double resolveStatusMultiplier(String status) {
+    return switch (status) {
+      case "EMPLOYED" -> 1.0;
+      case "SELF_EMPLOYED" -> 0.8;
+      case "INFORMAL" -> 0.6;
+      default -> 0.0;
+    };
+  }
+
+  private String formatStatus(String status) {
+    if (status == null) return "Unknown";
+    return switch (status.trim().toUpperCase()) {
+      case "EMPLOYED" -> "Formally employed";
+      case "SELF_EMPLOYED" -> "Self-employed";
+      case "INFORMAL" -> "Informally employed";
+      default -> status;
+    };
+  }
+
+  @Override
+  public int maxPoints() {
+    return weights.getEmploymentStability();
+  }
+
+  @Override
+  public String factorName() {
+    return FACTOR_NAME;
+  }
 }

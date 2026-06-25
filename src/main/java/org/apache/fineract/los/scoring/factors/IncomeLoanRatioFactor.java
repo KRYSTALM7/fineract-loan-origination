@@ -51,70 +51,67 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class IncomeLoanRatioFactor implements ScoringFactor {
 
-    private static final String FACTOR_NAME = "income-ratio";
+  private static final String FACTOR_NAME = "income-ratio";
 
-    private final ScoringWeightsProperties weights;
+  private final ScoringWeightsProperties weights;
 
-    @Override
-    public FactorScore score(ApplicantScoringProfile profile) {
-        final int max = maxPoints();
+  @Override
+  public FactorScore score(ApplicantScoringProfile profile) {
+    final int max = maxPoints();
 
-        BigDecimal income = profile.getMonthlyIncome();
-        BigDecimal requested = profile.getRequestedAmount();
+    BigDecimal income = profile.getMonthlyIncome();
+    BigDecimal requested = profile.getRequestedAmount();
 
-        if (income == null || requested == null
-                || income.compareTo(BigDecimal.ZERO) <= 0
-                || requested.compareTo(BigDecimal.ZERO) <= 0) {
-            return FactorScore.builder()
-                    .points(0)
-                    .maxPoints(max)
-                    .explanation("Insufficient data to evaluate income-to-loan ratio.")
-                    .build();
-        }
-
-        // ratio = monthlyIncome / requestedAmount
-        BigDecimal ratio = income.divide(requested, 4, RoundingMode.HALF_UP);
-        double r = ratio.doubleValue();
-
-        int points;
-        String explanation;
-
-        if (r >= 0.50) {
-            points = max;
-            explanation = String.format(
-                    "Income-to-loan ratio of %.2fx indicates strong repayment capacity.", r);
-        } else if (r >= 0.25) {
-            points = (int) Math.round(max * 0.75);
-            explanation = String.format(
-                    "Income-to-loan ratio of %.2fx indicates adequate repayment capacity.", r);
-        } else if (r >= 0.15) {
-            points = (int) Math.round(max * 0.50);
-            explanation = String.format(
-                    "Income-to-loan ratio of %.2fx indicates moderate repayment capacity.", r);
-        } else if (r >= 0.10) {
-            points = (int) Math.round(max * 0.25);
-            explanation = String.format(
-                    "Income-to-loan ratio of %.2fx indicates limited repayment capacity.", r);
-        } else {
-            points = 0;
-            explanation = String.format(
-                    "Income-to-loan ratio of %.2fx is below minimum threshold — high risk.", r);
-        }
-
-        return FactorScore.builder()
-                .points(points)
-                .maxPoints(max)
-                .explanation(explanation)
-                .build();
+    if (income == null
+        || requested == null
+        || income.compareTo(BigDecimal.ZERO) <= 0
+        || requested.compareTo(BigDecimal.ZERO) <= 0) {
+      return FactorScore.builder()
+          .points(0)
+          .maxPoints(max)
+          .explanation("Insufficient data to evaluate income-to-loan ratio.")
+          .build();
     }
 
-    @Override
-    public int maxPoints() {
-        return weights.getIncomeRatio();
+    // ratio = monthlyIncome / requestedAmount
+    BigDecimal ratio = income.divide(requested, 4, RoundingMode.HALF_UP);
+    double r = ratio.doubleValue();
+
+    int points;
+    String explanation;
+
+    if (r >= 0.50) {
+      points = max;
+      explanation =
+          String.format("Income-to-loan ratio of %.2fx indicates strong repayment capacity.", r);
+    } else if (r >= 0.25) {
+      points = (int) Math.round(max * 0.75);
+      explanation =
+          String.format("Income-to-loan ratio of %.2fx indicates adequate repayment capacity.", r);
+    } else if (r >= 0.15) {
+      points = (int) Math.round(max * 0.50);
+      explanation =
+          String.format("Income-to-loan ratio of %.2fx indicates moderate repayment capacity.", r);
+    } else if (r >= 0.10) {
+      points = (int) Math.round(max * 0.25);
+      explanation =
+          String.format("Income-to-loan ratio of %.2fx indicates limited repayment capacity.", r);
+    } else {
+      points = 0;
+      explanation =
+          String.format("Income-to-loan ratio of %.2fx is below minimum threshold — high risk.", r);
     }
 
-    @Override
-    public String factorName() {
-        return FACTOR_NAME;
-    }
+    return FactorScore.builder().points(points).maxPoints(max).explanation(explanation).build();
+  }
+
+  @Override
+  public int maxPoints() {
+    return weights.getIncomeRatio();
+  }
+
+  @Override
+  public String factorName() {
+    return FACTOR_NAME;
+  }
 }

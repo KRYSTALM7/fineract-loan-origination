@@ -51,74 +51,73 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class LoanPurposeRiskFactor implements ScoringFactor {
 
-    private static final String FACTOR_NAME = "loan-purpose-risk";
+  private static final String FACTOR_NAME = "loan-purpose-risk";
 
-    private final ScoringWeightsProperties weights;
+  private final ScoringWeightsProperties weights;
 
-    @Override
-    public FactorScore score(ApplicantScoringProfile profile) {
-        final int max = maxPoints();
+  @Override
+  public FactorScore score(ApplicantScoringProfile profile) {
+    final int max = maxPoints();
 
-        String purpose = profile.getLoanPurpose();
+    String purpose = profile.getLoanPurpose();
 
-        if (purpose == null || purpose.isBlank()) {
-            int defaultPoints = (int) Math.round(max * 0.30);
-            return FactorScore.builder()
-                    .points(defaultPoints)
-                    .maxPoints(max)
-                    .explanation("Loan purpose not specified — conservative risk score applied.")
-                    .build();
-        }
-
-        String normalized = purpose.trim().toUpperCase();
-        double multiplier = resolveRiskMultiplier(normalized);
-        int points = (int) Math.round(max * multiplier);
-
-        String explanation = buildExplanation(normalized, points, max);
-
-        return FactorScore.builder()
-                .points(points)
-                .maxPoints(max)
-                .explanation(explanation)
-                .build();
+    if (purpose == null || purpose.isBlank()) {
+      int defaultPoints = (int) Math.round(max * 0.30);
+      return FactorScore.builder()
+          .points(defaultPoints)
+          .maxPoints(max)
+          .explanation("Loan purpose not specified — conservative risk score applied.")
+          .build();
     }
 
-    private double resolveRiskMultiplier(String purpose) {
-        return switch (purpose) {
-            case "EDUCATION"        -> 1.00;
-            case "AGRICULTURE"      -> 1.00;
-            case "BUSINESS"         -> 0.80;
-            case "HOME_IMPROVEMENT" -> 0.60;
-            case "MEDICAL"          -> 0.60;
-            case "CONSUMPTION"      -> 0.40;
-            case "PERSONAL"         -> 0.40;
-            case "SPECULATION"      -> 0.00;
-            default                 -> 0.30;
-        };
-    }
+    String normalized = purpose.trim().toUpperCase();
+    double multiplier = resolveRiskMultiplier(normalized);
+    int points = (int) Math.round(max * multiplier);
 
-    private String buildExplanation(String purpose, int points, int max) {
-        return switch (purpose) {
-            case "EDUCATION"        -> "Education loan — high social value and repayment motivation.";
-            case "AGRICULTURE"      -> "Agriculture loan — productive purpose aligned with core MFI portfolio.";
-            case "BUSINESS"         -> "Business loan — productive purpose with moderate income variability risk.";
-            case "HOME_IMPROVEMENT" -> "Home improvement loan — asset-backed, moderate risk.";
-            case "MEDICAL"          -> "Medical loan — necessary expenditure, moderate risk.";
-            case "CONSUMPTION"      -> "Consumption loan — non-productive purpose, elevated risk.";
-            case "PERSONAL"         -> "Personal loan with undefined purpose — elevated risk.";
-            case "SPECULATION"      -> "Speculative loan purpose — maximum risk, no points awarded.";
-            default                 -> String.format(
-                    "Unrecognised loan purpose '%s' — conservative risk score applied.", purpose);
-        };
-    }
+    String explanation = buildExplanation(normalized, points, max);
 
-    @Override
-    public int maxPoints() {
-        return weights.getLoanPurposeRisk();
-    }
+    return FactorScore.builder().points(points).maxPoints(max).explanation(explanation).build();
+  }
 
-    @Override
-    public String factorName() {
-        return FACTOR_NAME;
-    }
+  private double resolveRiskMultiplier(String purpose) {
+    return switch (purpose) {
+      case "EDUCATION" -> 1.00;
+      case "AGRICULTURE" -> 1.00;
+      case "BUSINESS" -> 0.80;
+      case "HOME_IMPROVEMENT" -> 0.60;
+      case "MEDICAL" -> 0.60;
+      case "CONSUMPTION" -> 0.40;
+      case "PERSONAL" -> 0.40;
+      case "SPECULATION" -> 0.00;
+      default -> 0.30;
+    };
+  }
+
+  private String buildExplanation(String purpose, int points, int max) {
+    return switch (purpose) {
+      case "EDUCATION" -> "Education loan — high social value and repayment motivation.";
+      case "AGRICULTURE" ->
+          "Agriculture loan — productive purpose aligned with core MFI portfolio.";
+      case "BUSINESS" ->
+          "Business loan — productive purpose with moderate income variability risk.";
+      case "HOME_IMPROVEMENT" -> "Home improvement loan — asset-backed, moderate risk.";
+      case "MEDICAL" -> "Medical loan — necessary expenditure, moderate risk.";
+      case "CONSUMPTION" -> "Consumption loan — non-productive purpose, elevated risk.";
+      case "PERSONAL" -> "Personal loan with undefined purpose — elevated risk.";
+      case "SPECULATION" -> "Speculative loan purpose — maximum risk, no points awarded.";
+      default ->
+          String.format(
+              "Unrecognised loan purpose '%s' — conservative risk score applied.", purpose);
+    };
+  }
+
+  @Override
+  public int maxPoints() {
+    return weights.getLoanPurposeRisk();
+  }
+
+  @Override
+  public String factorName() {
+    return FACTOR_NAME;
+  }
 }
