@@ -26,10 +26,9 @@ import lombok.Getter;
 /**
  * Immutable input model for the credit scoring engine.
  *
- * <p>Deliberately decoupled from the {@code ApplicantProfile} and {@code LoanApplication} JPA
- * entities — the scoring engine must never depend on persistence-layer classes. This allows scoring
- * to be unit tested without any database or Spring context, and allows the scoring module to be
- * extracted into a separate library in the future if needed.
+ * <p>Deliberately decoupled from JPA entities — the scoring engine must never depend on
+ * persistence-layer classes. This allows scoring to be unit tested without any database or Spring
+ * context.
  *
  * <p>Built exclusively via the {@link Builder} — no public constructor or setters, preventing
  * partially-constructed instances from entering the scoring pipeline.
@@ -55,8 +54,7 @@ public class ApplicantScoringProfile {
 
   /**
    * Number of prior loans repaid successfully in Fineract. Null or zero indicates a first-time
-   * borrower with no repayment history — handled explicitly by the factor, not treated as a
-   * penalty.
+   * borrower with no repayment history — handled explicitly, not penalised.
    */
   private final Integer successfulRepaymentsCount;
 

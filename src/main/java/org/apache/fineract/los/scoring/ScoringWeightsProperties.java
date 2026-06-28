@@ -20,8 +20,10 @@
 package org.apache.fineract.los.scoring;
 
 import jakarta.annotation.PostConstruct;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import java.math.BigDecimal;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -29,30 +31,17 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 /**
- * Externalised configuration for credit scoring factor weights.
+ * Externalised configuration for credit scoring factor weights and thresholds.
  *
  * <p>Bound from {@code application.yml} under the prefix {@code los.scoring.weights}. Institutions
  * can tune these values without recompiling — only a restart is required.
  *
- * <p>Example configuration:
- *
- * <pre>
- * los:
- *   scoring:
- *     weights:
- *       income-ratio: 30
- *       debt-burden: 25
- *       employment-stability: 20
- *       repayment-history: 15
- *       loan-purpose-risk: 10
- * </pre>
- *
  * <p>Default values follow CGAP microfinance credit assessment guidelines and are applied if no
  * configuration is provided.
  *
- * <p>{@link #validateWeightsSumToHundred()} runs on startup via {@code @PostConstruct} — the
- * application will fail fast with a clear error if weights are misconfigured, rather than silently
- * producing incorrect scores at runtime.
+ * <p>{@link #validateWeightsSumToHundred()} runs on startup via {@code @PostConstruct} — fails fast
+ * with a clear error if weights are misconfigured, rather than silently producing incorrect scores
+ * at runtime.
  */
 @Slf4j
 @Getter
@@ -60,6 +49,10 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @ConfigurationProperties(prefix = "los.scoring.weights")
 public class ScoringWeightsProperties {
+
+  // ─────────────────────────────────────────────────────────
+  // Factor Weights
+  // ─────────────────────────────────────────────────────────
 
   /** Weight for income-to-loan ratio factor. Default 30. */
   @Min(0)
@@ -86,11 +79,44 @@ public class ScoringWeightsProperties {
   @Max(100)
   private int loanPurposeRisk = 10;
 
+  // ─────────────────────────────────────────────────────────
+  // Income Ratio Thresholds
+  // ─────────────────────────────────────────────────────────
+
+  /** Ratio at or above which income-ratio factor scores full points. */
+  @DecimalMin("0.0")
+  private BigDecimal incomeRatioFullThreshold = new BigDecimal("0.20");
+
+  /** Ratio at or above which income-ratio factor scores 75%. */
+  @DecimalMin("0.0")
+  private BigDecimal incomeRatioHighThreshold = new BigDecimal("0.10");
+
+  /** Ratio at or above which income-ratio factor scores 50%. */
+  @DecimalMin("0.0")
+  private BigDecimal incomeRatioMediumThreshold = new BigDecimal("0.05");
+
+  // ─────────────────────────────────────────────────────────
+  // Debt Burden Thresholds
+  // ─────────────────────────────────────────────────────────
+
+  /** Ratio at or below which debt-burden factor scores full points. */
+  @DecimalMin("0.0")
+  private BigDecimal debtBurdenLowThreshold = new BigDecimal("0.10");
+
+  /** Ratio at or below which debt-burden factor scores 75%. */
+  @DecimalMin("0.0")
+  private BigDecimal debtBurdenModerateThreshold = new BigDecimal("0.30");
+
+  /** Ratio at or below which debt-burden factor scores 50%. */
+  @DecimalMin("0.0")
+  private BigDecimal debtBurdenHighThreshold = new BigDecimal("0.50");
+
+  /** Ratio at or below which debt-burden factor scores 25%. */
+  @DecimalMin("0.0")
+  private BigDecimal debtBurdenSevereThreshold = new BigDecimal("0.70");
+
   /**
    * Validates that all configured weights sum to exactly 100 on application startup.
-   *
-   * <p>Fails fast with a descriptive exception if the institution has misconfigured weights — this
-   * prevents silently producing credit scores that do not add up to a meaningful 0-100 scale.
    *
    * @throws IllegalStateException if weights do not sum to 100
    */
