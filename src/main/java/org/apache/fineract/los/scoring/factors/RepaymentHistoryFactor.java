@@ -31,94 +31,75 @@ import org.springframework.stereotype.Component;
 /**
  * Scores the applicant's past repayment behaviour in Fineract.
  *
- * <p>Default weight: 15 points (configurable via
- * {@code los.scoring.weights.repayment-history}).
+ * <p>Default weight: 15 points (configurable via {@code los.scoring.weights.repayment-history}).
  *
- * <p>Critical design decision: first-time borrowers with no
- * history (both counts null or zero) are scored at the
- * <strong>midpoint</strong> rather than zero. Penalising
- * first-time borrowers as if they had bad history would
- * unfairly exclude new applicants — common in microfinance
- * where many borrowers have no formal credit history.
+ * <p>Critical design decision: first-time borrowers with no history (both counts null or zero) are
+ * scored at the <strong>midpoint</strong> rather than zero. Penalising first-time borrowers as if
+ * they had bad history would unfairly exclude new applicants — common in microfinance where many
+ * borrowers have no formal credit history.
  *
- * <p>All arithmetic uses {@link BigDecimal} exclusively —
- * never mixed with {@code float}/{@code double} — to avoid
- * precision drift on financial calculations.
+ * <p>All arithmetic uses {@link BigDecimal} exclusively — never mixed with {@code float}/{@code
+ * double} — to avoid precision drift on financial calculations.
  */
 @Component
 @RequiredArgsConstructor
 public class RepaymentHistoryFactor implements ScoringFactor {
 
-    private static final String FACTOR_NAME = "repayment-history";
+  private static final String FACTOR_NAME = "repayment-history";
 
-    private final ScoringWeightsProperties weights;
+  private final ScoringWeightsProperties weights;
 
-    @Override
-    public FactorScore score(final ApplicantScoringProfile profile) {
-        final int max = maxPoints();
+  @Override
+  public FactorScore score(final ApplicantScoringProfile profile) {
+    final int max = maxPoints();
 
-        final int successful = nullToZero(
-                profile.getSuccessfulRepaymentsCount());
-        final int missed = nullToZero(
-                profile.getMissedRepaymentsCount());
-        final int total = successful + missed;
+    final int successful = nullToZero(profile.getSuccessfulRepaymentsCount());
+    final int missed = nullToZero(profile.getMissedRepaymentsCount());
+    final int total = successful + missed;
 
-        if (total == 0) {
-            final int midpoint = BigDecimal.valueOf(max)
-                    .divide(BigDecimal.valueOf(2), 0, RoundingMode.HALF_UP)
-                    .intValue();
-            return buildScore(
-                    midpoint,
-                    max,
-                    "No prior repayment history — first-time "
-                            + "borrower scored at midpoint rather "
-                            + "than penalised.");
-        }
-
-        final BigDecimal successRate = BigDecimal.valueOf(successful)
-                .divide(BigDecimal.valueOf(total), 4, RoundingMode.HALF_UP);
-
-        final int points = BigDecimal.valueOf(max)
-                .multiply(successRate)
-                .setScale(0, RoundingMode.HALF_UP)
-                .intValue();
-
-        final BigDecimal successPercent = successRate
-                .multiply(BigDecimal.valueOf(100))
-                .setScale(0, RoundingMode.HALF_UP);
-
-        return buildScore(
-                points,
-                max,
-                String.format(
-                        "Repayment history: %d successful, %d missed "
-                                + "out of %d total — %s%% success rate.",
-                        successful,
-                        missed,
-                        total,
-                        successPercent));
+    if (total == 0) {
+      final int midpoint =
+          BigDecimal.valueOf(max).divide(BigDecimal.valueOf(2), 0, RoundingMode.HALF_UP).intValue();
+      return buildScore(
+          midpoint,
+          max,
+          "No prior repayment history — first-time "
+              + "borrower scored at midpoint rather "
+              + "than penalised.");
     }
 
-    @Override
-    public int maxPoints() {
-        return weights.getRepaymentHistory();
-    }
+    final BigDecimal successRate =
+        BigDecimal.valueOf(successful).divide(BigDecimal.valueOf(total), 4, RoundingMode.HALF_UP);
 
-    @Override
-    public String factorName() {
-        return FACTOR_NAME;
-    }
+    final int points =
+        BigDecimal.valueOf(max).multiply(successRate).setScale(0, RoundingMode.HALF_UP).intValue();
 
-    private int nullToZero(final Integer value) {
-        return value == null ? 0 : Math.max(0, value);
-    }
+    final BigDecimal successPercent =
+        successRate.multiply(BigDecimal.valueOf(100)).setScale(0, RoundingMode.HALF_UP);
 
-    private FactorScore buildScore(
-            final int points, final int max, final String explanation) {
-        return FactorScore.builder()
-                .points(points)
-                .maxPoints(max)
-                .explanation(explanation)
-                .build();
-    }
+    return buildScore(
+        points,
+        max,
+        String.format(
+            "Repayment history: %d successful, %d missed " + "out of %d total — %s%% success rate.",
+            successful, missed, total, successPercent));
+  }
+
+  @Override
+  public int maxPoints() {
+    return weights.getRepaymentHistory();
+  }
+
+  @Override
+  public String factorName() {
+    return FACTOR_NAME;
+  }
+
+  private int nullToZero(final Integer value) {
+    return value == null ? 0 : Math.max(0, value);
+  }
+
+  private FactorScore buildScore(final int points, final int max, final String explanation) {
+    return FactorScore.builder().points(points).maxPoints(max).explanation(explanation).build();
+  }
 }

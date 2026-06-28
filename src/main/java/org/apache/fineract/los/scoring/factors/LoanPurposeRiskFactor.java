@@ -31,97 +31,91 @@ import org.springframework.util.StringUtils;
 /**
  * Scores risk based on the declared purpose of the loan.
  *
- * <p>Default weight: 10 points (configurable via
- * {@code los.scoring.weights.loan-purpose-risk}).
+ * <p>Default weight: 10 points (configurable via {@code los.scoring.weights.loan-purpose-risk}).
  *
- * <p>Purpose categories are mapped to a risk multiplier based
- * on income stability and repayment predictability typically
- * associated with each category in microfinance lending:
+ * <p>Purpose categories are mapped to a risk multiplier based on income stability and repayment
+ * predictability typically associated with each category in microfinance lending:
+ *
  * <ul>
- *   <li>AGRICULTURE, EDUCATION — low risk, full points</li>
- *   <li>BUSINESS, HOME_IMPROVEMENT — moderate risk, 75%</li>
- *   <li>CONSUMER, MEDICAL — moderate-high risk, 50%</li>
- *   <li>SPECULATION, OTHER — high risk, 25%</li>
- *   <li>unrecognised or missing purpose — 50% (neutral)</li>
+ *   <li>AGRICULTURE, EDUCATION — low risk, full points
+ *   <li>BUSINESS, HOME_IMPROVEMENT — moderate risk, 75%
+ *   <li>CONSUMER, MEDICAL — moderate-high risk, 50%
+ *   <li>SPECULATION, OTHER — high risk, 25%
+ *   <li>unrecognised or missing purpose — 50% (neutral)
  * </ul>
  *
- * <p>Category mapping is intentionally a simple in-memory map
- * rather than externalised configuration — unlike the numeric
- * weights, these categorical risk tiers are a domain modelling
- * decision rather than an institution-tunable parameter. If a
- * future institution needs different categories, this can be
- * extended to read from configuration without changing the
- * {@link ScoringFactor} contract.
+ * <p>Category mapping is intentionally a simple in-memory map rather than externalised
+ * configuration — unlike the numeric weights, these categorical risk tiers are a domain modelling
+ * decision rather than an institution-tunable parameter. If a future institution needs different
+ * categories, this can be extended to read from configuration without changing the {@link
+ * ScoringFactor} contract.
  */
 @Component
 @RequiredArgsConstructor
 public class LoanPurposeRiskFactor implements ScoringFactor {
 
-    private static final String FACTOR_NAME = "loan-purpose-risk";
+  private static final String FACTOR_NAME = "loan-purpose-risk";
 
-    private static final int DEFAULT_PERCENTAGE = 50;
+  private static final int DEFAULT_PERCENTAGE = 50;
 
-    private static final Map<String, Integer> PURPOSE_RISK_PERCENTAGE =
-            Map.of(
-                    "AGRICULTURE", 100,
-                    "EDUCATION", 100,
-                    "BUSINESS", 75,
-                    "HOME_IMPROVEMENT", 75,
-                    "CONSUMER", 50,
-                    "MEDICAL", 50,
-                    "SPECULATION", 25,
-                    "OTHER", 25);
+  private static final Map<String, Integer> PURPOSE_RISK_PERCENTAGE =
+      Map.of(
+          "AGRICULTURE", 100,
+          "EDUCATION", 100,
+          "BUSINESS", 75,
+          "HOME_IMPROVEMENT", 75,
+          "CONSUMER", 50,
+          "MEDICAL", 50,
+          "SPECULATION", 25,
+          "OTHER", 25);
 
-    private final ScoringWeightsProperties weights;
+  private final ScoringWeightsProperties weights;
 
-    @Override
-    public FactorScore score(final ApplicantScoringProfile profile) {
-        final int max = maxPoints();
-        final String purpose = profile.getLoanPurpose();
+  @Override
+  public FactorScore score(final ApplicantScoringProfile profile) {
+    final int max = maxPoints();
+    final String purpose = profile.getLoanPurpose();
 
-        final int percentage = resolvePercentage(purpose);
-        final int points = Math.round(max * percentage / 100.0f);
+    final int percentage = resolvePercentage(purpose);
+    final int points = Math.round(max * percentage / 100.0f);
 
-        return FactorScore.builder()
-                .points(points)
-                .maxPoints(max)
-                .explanation(String.format(
-                        "Loan purpose [%s] classified as %s risk.",
-                        StringUtils.hasText(purpose)
-                                ? purpose
-                                : "UNSPECIFIED",
-                        riskLabel(percentage)))
-                .build();
+    return FactorScore.builder()
+        .points(points)
+        .maxPoints(max)
+        .explanation(
+            String.format(
+                "Loan purpose [%s] classified as %s risk.",
+                StringUtils.hasText(purpose) ? purpose : "UNSPECIFIED", riskLabel(percentage)))
+        .build();
+  }
+
+  @Override
+  public int maxPoints() {
+    return weights.getLoanPurposeRisk();
+  }
+
+  @Override
+  public String factorName() {
+    return FACTOR_NAME;
+  }
+
+  private int resolvePercentage(final String purpose) {
+    if (!StringUtils.hasText(purpose)) {
+      return DEFAULT_PERCENTAGE;
     }
+    return PURPOSE_RISK_PERCENTAGE.getOrDefault(purpose.toUpperCase(), DEFAULT_PERCENTAGE);
+  }
 
-    @Override
-    public int maxPoints() {
-        return weights.getLoanPurposeRisk();
+  private String riskLabel(final int percentage) {
+    if (percentage >= 100) {
+      return "low";
     }
-
-    @Override
-    public String factorName() {
-        return FACTOR_NAME;
+    if (percentage >= 75) {
+      return "moderate";
     }
-
-    private int resolvePercentage(final String purpose) {
-        if (!StringUtils.hasText(purpose)) {
-            return DEFAULT_PERCENTAGE;
-        }
-        return PURPOSE_RISK_PERCENTAGE.getOrDefault(
-                purpose.toUpperCase(), DEFAULT_PERCENTAGE);
+    if (percentage >= 50) {
+      return "moderate-high";
     }
-
-    private String riskLabel(final int percentage) {
-        if (percentage >= 100) {
-            return "low";
-        }
-        if (percentage >= 75) {
-            return "moderate";
-        }
-        if (percentage >= 50) {
-            return "moderate-high";
-        }
-        return "high";
-    }
+    return "high";
+  }
 }
