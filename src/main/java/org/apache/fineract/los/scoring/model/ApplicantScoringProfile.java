@@ -26,49 +26,50 @@ import lombok.Getter;
 /**
  * Immutable input model for the credit scoring engine.
  *
- * <p>Deliberately decoupled from the {@code ApplicantProfile} and {@code LoanApplication} JPA
- * entities — the scoring engine must never depend on persistence-layer classes. This allows scoring
- * to be unit tested without any database or Spring context, and allows the scoring module to be
- * extracted into a separate library in the future if needed.
+ * <p>Deliberately decoupled from JPA entities — the scoring
+ * engine must never depend on persistence-layer classes.
+ * This allows scoring to be unit tested without any database
+ * or Spring context.
  *
- * <p>Built exclusively via the {@link Builder} — no public constructor or setters, preventing
- * partially-constructed instances from entering the scoring pipeline.
+ * <p>Built exclusively via the {@link Builder} — no public
+ * constructor or setters, preventing partially-constructed
+ * instances from entering the scoring pipeline.
  */
 @Getter
 @Builder
 public class ApplicantScoringProfile {
 
-  /** Monthly income of the applicant in application currency. */
-  private final BigDecimal monthlyIncome;
+    /** Monthly income of the applicant in application currency. */
+    private final BigDecimal monthlyIncome;
 
-  /** Amount requested in the loan application. */
-  private final BigDecimal requestedAmount;
+    /** Amount requested in the loan application. */
+    private final BigDecimal requestedAmount;
 
-  /** Total existing loan obligations per month. */
-  private final BigDecimal existingLoanObligations;
+    /** Total existing loan obligations per month. */
+    private final BigDecimal existingLoanObligations;
 
-  /** Employment status — EMPLOYED, SELF_EMPLOYED, etc. */
-  private final String employmentStatus;
+    /** Employment status — EMPLOYED, SELF_EMPLOYED, etc. */
+    private final String employmentStatus;
 
-  /** Number of months in current employment. */
-  private final Integer employmentDurationMonths;
+    /** Number of months in current employment. */
+    private final Integer employmentDurationMonths;
 
-  /**
-   * Number of prior loans repaid successfully in Fineract. Null or zero indicates a first-time
-   * borrower with no repayment history — handled explicitly by the factor, not treated as a
-   * penalty.
-   */
-  private final Integer successfulRepaymentsCount;
+    /**
+     * Number of prior loans repaid successfully in Fineract.
+     * Null or zero indicates a first-time borrower with no
+     * repayment history — handled explicitly, not penalised.
+     */
+    private final Integer successfulRepaymentsCount;
 
-  /**
-   * Number of prior loans with missed or late payments. Null or zero indicates no negative
-   * repayment history.
-   */
-  private final Integer missedRepaymentsCount;
+    /**
+     * Number of prior loans with missed or late payments.
+     * Null or zero indicates no negative repayment history.
+     */
+    private final Integer missedRepaymentsCount;
 
-  /**
-   * Purpose of the loan, e.g. AGRICULTURE, EDUCATION, BUSINESS, SPECULATION. Used to derive purpose
-   * risk.
-   */
-  private final String loanPurpose;
+    /**
+     * Purpose of the loan, e.g. AGRICULTURE, EDUCATION,
+     * BUSINESS, SPECULATION. Used to derive purpose risk.
+     */
+    private final String loanPurpose;
 }

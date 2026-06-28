@@ -25,117 +25,130 @@ import org.apache.fineract.los.scoring.ScoringWeightsProperties;
 import org.apache.fineract.los.scoring.model.ApplicantScoringProfile;
 import org.apache.fineract.los.scoring.model.FactorScore;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 /**
- * Evaluates employment stability as a credit scoring factor.
+ * Scores the applicant's employment stability based on
+ * employment status and duration in current employment.
  *
- * <p>Combines employment status and duration to assess income reliability. Stable formal employment
- * over a longer tenure signals a lower risk of income disruption during the loan term.
+ * <p>Default weight: 20 points (configurable via
+ * {@code los.scoring.weights.employment-stability}).
  *
- * <p>Status multipliers applied to duration-band base scores:
- *
+ * <p>Combines two signals:
  * <ul>
- *   <li>EMPLOYED &rarr; 1.0 (full weight — formal employment, most predictable income)
- *   <li>SELF_EMPLOYED &rarr; 0.8 (slightly lower — income variability)
- *   <li>INFORMAL &rarr; 0.6 (informal sector — higher income uncertainty)
- *   <li>UNEMPLOYED or unknown &rarr; 0 points regardless of duration
+ *   <li>Employment status — EMPLOYED and SELF_EMPLOYED score
+ *       higher than INFORMAL or UNEMPLOYED</li>
+ *   <li>Duration — longer tenure indicates lower job-loss risk</li>
  * </ul>
  *
- * <p>Duration bands (months in current employment):
- *
- * <ul>
- *   <li>&ge; 24 months &rarr; full base points
- *   <li>&ge; 12 months &rarr; 75% of base points
- *   <li>&ge; 6 months &rarr; 50% of base points
- *   <li>&ge; 3 months &rarr; 25% of base points
- *   <li>&lt; 3 months &rarr; 0 base points
- * </ul>
- *
- * <p>Final score = floor(statusMultiplier * durationPoints), capped at {@link #maxPoints()}.
+ * <p>Status contributes 60% of this factor's points, duration
+ * contributes the remaining 40% — reflecting that having
+ * stable income at all matters more than how long, per CGAP
+ * guidance for resource-constrained lending environments.
  */
 @Component
 @RequiredArgsConstructor
 public class EmploymentStabilityFactor implements ScoringFactor {
 
-  private static final String FACTOR_NAME = "employment-stability";
+    private static final String FACTOR_NAME = "employment-stability";
 
-  private final ScoringWeightsProperties weights;
+    private static final int STATUS_WEIGHT_PERCENT = 60;
+    private static final int DURATION_WEIGHT_PERCENT = 40;
 
-  @Override
-  public FactorScore score(ApplicantScoringProfile profile) {
-    final int max = maxPoints();
+    private static final int DURATION_FULL_MONTHS = 36;
+    private static final int DURATION_HIGH_MONTHS = 12;
+    private static final int DURATION_MODERATE_MONTHS = 6;
 
-    String status = profile.getEmploymentStatus();
-    Integer durationMonths = profile.getEmploymentDurationMonths();
+    private final ScoringWeightsProperties weights;
 
-    // Unemployed or missing status — no employment stability
-    if (status == null || status.isBlank() || "UNEMPLOYED".equalsIgnoreCase(status.trim())) {
-      return FactorScore.builder()
-          .points(0)
-          .maxPoints(max)
-          .explanation("Applicant is unemployed or employment status is unknown.")
-          .build();
+    @Override
+    public FactorScore score(final ApplicantScoringProfile profile) {
+        final int max = maxPoints();
+
+        final int statusPoints = scoreStatus(
+                profile.getEmploymentStatus(), max);
+        final int durationPoints = scoreDuration(
+                profile.getEmploymentDurationMonths(), max);
+
+        final int totalPoints = Math.min(
+                max, statusPoints + durationPoints);
+
+        return FactorScore.builder()
+                .points(totalPoints)
+                .maxPoints(max)
+                .explanation(String.format(
+                        "Employment status [%s] with %s tenure "
+                                + "contributes %d of %d points.",
+                        StringUtils.hasText(
+                                profile.getEmploymentStatus())
+                                ? profile.getEmploymentStatus()
+                                : "UNKNOWN",
+                        durationDescription(
+                                profile.getEmploymentDurationMonths()),
+                        totalPoints,
+                        max))
+                .build();
     }
 
-    double statusMultiplier = resolveStatusMultiplier(status.trim().toUpperCase());
-    int months = (durationMonths != null && durationMonths > 0) ? durationMonths : 0;
-
-    int durationPoints;
-    String durationLabel;
-
-    if (months >= 24) {
-      durationPoints = max;
-      durationLabel = months + " months — long-term stable employment.";
-    } else if (months >= 12) {
-      durationPoints = (int) Math.round(max * 0.75);
-      durationLabel = months + " months — established employment.";
-    } else if (months >= 6) {
-      durationPoints = (int) Math.round(max * 0.50);
-      durationLabel = months + " months — moderate employment tenure.";
-    } else if (months >= 3) {
-      durationPoints = (int) Math.round(max * 0.25);
-      durationLabel = months + " months — short employment tenure.";
-    } else {
-      durationPoints = 0;
-      durationLabel = months + " months — insufficient employment history.";
+    @Override
+    public int maxPoints() {
+        return weights.getEmploymentStability();
     }
 
-    int points = Math.min((int) Math.floor(statusMultiplier * durationPoints), max);
+    @Override
+    public String factorName() {
+        return FACTOR_NAME;
+    }
 
-    String explanation =
-        String.format(
-            "%s applicant with %s Status multiplier: %.0f%%.",
-            formatStatus(status), durationLabel, statusMultiplier * 100);
+    private int scoreStatus(final String status, final int max) {
+        final int statusMax = scaled(max, STATUS_WEIGHT_PERCENT);
 
-    return FactorScore.builder().points(points).maxPoints(max).explanation(explanation).build();
-  }
+        if (!StringUtils.hasText(status)) {
+            return 0;
+        }
 
-  private double resolveStatusMultiplier(String status) {
-    return switch (status) {
-      case "EMPLOYED" -> 1.0;
-      case "SELF_EMPLOYED" -> 0.8;
-      case "INFORMAL" -> 0.6;
-      default -> 0.0;
-    };
-  }
+        return switch (status.toUpperCase()) {
+            case "EMPLOYED" -> statusMax;
+            case "SELF_EMPLOYED" -> scaled(statusMax, 90);
+            case "INFORMAL" -> scaled(statusMax, 50);
+            case "UNEMPLOYED" -> 0;
+            default -> scaled(statusMax, 50);
+        };
+    }
 
-  private String formatStatus(String status) {
-    if (status == null) return "Unknown";
-    return switch (status.trim().toUpperCase()) {
-      case "EMPLOYED" -> "Formally employed";
-      case "SELF_EMPLOYED" -> "Self-employed";
-      case "INFORMAL" -> "Informally employed";
-      default -> status;
-    };
-  }
+    private int scoreDuration(
+            final Integer durationMonths, final int max) {
+        final int durationMax = scaled(max, DURATION_WEIGHT_PERCENT);
 
-  @Override
-  public int maxPoints() {
-    return weights.getEmploymentStability();
-  }
+        if (durationMonths == null || durationMonths <= 0) {
+            return 0;
+        }
+        if (durationMonths >= DURATION_FULL_MONTHS) {
+            return durationMax;
+        }
+        if (durationMonths >= DURATION_HIGH_MONTHS) {
+            return scaled(durationMax, 75);
+        }
+        if (durationMonths >= DURATION_MODERATE_MONTHS) {
+            return scaled(durationMax, 50);
+        }
+        return scaled(durationMax, 25);
+    }
 
-  @Override
-  public String factorName() {
-    return FACTOR_NAME;
-  }
+    private String durationDescription(final Integer months) {
+        if (months == null || months <= 0) {
+            return "unknown";
+        }
+        if (months >= DURATION_FULL_MONTHS) {
+            return "long-term (3+ years)";
+        }
+        if (months >= DURATION_HIGH_MONTHS) {
+            return "established (1-3 years)";
+        }
+        return "recent (under 1 year)";
+    }
+
+    private int scaled(final int max, final int percentage) {
+        return Math.round(max * percentage / 100.0f);
+    }
 }

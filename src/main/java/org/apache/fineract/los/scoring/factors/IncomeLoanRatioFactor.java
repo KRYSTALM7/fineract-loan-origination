@@ -29,89 +29,124 @@ import org.apache.fineract.los.scoring.model.FactorScore;
 import org.springframework.stereotype.Component;
 
 /**
- * Evaluates the income-to-loan ratio as a credit scoring factor.
+ * Scores the applicant's income-to-loan ratio — the ratio of
+ * monthly income to the requested loan amount.
  *
- * <p>Measures whether the applicant's monthly income is sufficient relative to the requested loan
- * amount. A higher ratio indicates stronger repayment capacity.
+ * <p>Default weight: 30 points (configurable via
+ * {@code los.scoring.weights.income-ratio}). Thresholds are
+ * also configurable via {@code los.scoring.weights.income-ratio-*}
+ * so institutions can tune their own risk appetite without
+ * code changes.
  *
- * <p>Scoring bands (ratio = monthlyIncome / requestedAmount):
+ * <p>All arithmetic uses {@link BigDecimal} exclusively —
+ * never mixed with {@code float}/{@code double} — to avoid
+ * precision drift on financial calculations.
  *
- * <ul>
- *   <li>&ge; 0.50 (income covers loan in &le; 2 months) &rarr; full points
- *   <li>&ge; 0.25 (&le; 4 months) &rarr; 75% of max points
- *   <li>&ge; 0.15 (&le; ~6.7 months) &rarr; 50% of max points
- *   <li>&ge; 0.10 (&le; 10 months) &rarr; 25% of max points
- *   <li>&lt; 0.10 &rarr; 0 points
- * </ul>
- *
- * <p>If {@code requestedAmount} is null or zero, scores 0 (cannot evaluate an undefined loan size).
- * If {@code monthlyIncome} is null or zero, scores 0 (no income means no repayment capacity).
+ * <p>Division by zero is explicitly guarded: a zero or negative
+ * requested amount is treated as invalid input and scored as
+ * zero rather than throwing {@link ArithmeticException}.
  */
 @Component
 @RequiredArgsConstructor
 public class IncomeLoanRatioFactor implements ScoringFactor {
 
-  private static final String FACTOR_NAME = "income-ratio";
+    private static final String FACTOR_NAME = "income-ratio";
+    private static final int SCALE = 4;
 
-  private final ScoringWeightsProperties weights;
+    private final ScoringWeightsProperties weights;
 
-  @Override
-  public FactorScore score(ApplicantScoringProfile profile) {
-    final int max = maxPoints();
+    @Override
+    public FactorScore score(final ApplicantScoringProfile profile) {
+        final int max = maxPoints();
 
-    BigDecimal income = profile.getMonthlyIncome();
-    BigDecimal requested = profile.getRequestedAmount();
+        if (!hasValidInputs(profile)) {
+            return buildScore(
+                    0,
+                    max,
+                    "Income or requested amount missing or invalid "
+                            + "— factor scored as zero pending "
+                            + "complete data.");
+        }
 
-    if (income == null
-        || requested == null
-        || income.compareTo(BigDecimal.ZERO) <= 0
-        || requested.compareTo(BigDecimal.ZERO) <= 0) {
-      return FactorScore.builder()
-          .points(0)
-          .maxPoints(max)
-          .explanation("Insufficient data to evaluate income-to-loan ratio.")
-          .build();
+        final BigDecimal ratio = profile.getMonthlyIncome()
+                .divide(
+                        profile.getRequestedAmount(),
+                        SCALE,
+                        RoundingMode.HALF_UP);
+
+        final int points;
+        final String tier;
+
+        if (ratio.compareTo(weights.getIncomeRatioFullThreshold()) >= 0) {
+            points = max;
+            tier = "strong";
+        } else if (ratio.compareTo(
+                weights.getIncomeRatioHighThreshold()) >= 0) {
+            points = scaled(max, 75);
+            tier = "good";
+        } else if (ratio.compareTo(
+                weights.getIncomeRatioMediumThreshold()) >= 0) {
+            points = scaled(max, 50);
+            tier = "moderate";
+        } else if (ratio.compareTo(BigDecimal.ZERO) > 0) {
+            points = scaled(max, 25);
+            tier = "weak";
+        } else {
+            points = 0;
+            tier = "none";
+        }
+
+        return buildScore(
+                points,
+                max,
+                String.format(
+                        "Income-to-loan ratio of %s indicates %s "
+                                + "repayment capacity.",
+                        ratio,
+                        tier));
     }
 
-    // ratio = monthlyIncome / requestedAmount
-    BigDecimal ratio = income.divide(requested, 4, RoundingMode.HALF_UP);
-    double r = ratio.doubleValue();
-
-    int points;
-    String explanation;
-
-    if (r >= 0.50) {
-      points = max;
-      explanation =
-          String.format("Income-to-loan ratio of %.2fx indicates strong repayment capacity.", r);
-    } else if (r >= 0.25) {
-      points = (int) Math.round(max * 0.75);
-      explanation =
-          String.format("Income-to-loan ratio of %.2fx indicates adequate repayment capacity.", r);
-    } else if (r >= 0.15) {
-      points = (int) Math.round(max * 0.50);
-      explanation =
-          String.format("Income-to-loan ratio of %.2fx indicates moderate repayment capacity.", r);
-    } else if (r >= 0.10) {
-      points = (int) Math.round(max * 0.25);
-      explanation =
-          String.format("Income-to-loan ratio of %.2fx indicates limited repayment capacity.", r);
-    } else {
-      points = 0;
-      explanation =
-          String.format("Income-to-loan ratio of %.2fx is below minimum threshold — high risk.", r);
+    @Override
+    public int maxPoints() {
+        return weights.getIncomeRatio();
     }
 
-    return FactorScore.builder().points(points).maxPoints(max).explanation(explanation).build();
-  }
+    @Override
+    public String factorName() {
+        return FACTOR_NAME;
+    }
 
-  @Override
-  public int maxPoints() {
-    return weights.getIncomeRatio();
-  }
+    /**
+     * Validates that both income and requested amount are
+     * present, and that requested amount is strictly positive —
+     * preventing division by zero in {@link #score}.
+     */
+    private boolean hasValidInputs(
+            final ApplicantScoringProfile profile) {
+        return profile.getMonthlyIncome() != null
+                && profile.getRequestedAmount() != null
+                && profile.getRequestedAmount()
+                        .compareTo(BigDecimal.ZERO) > 0;
+    }
 
-  @Override
-  public String factorName() {
-    return FACTOR_NAME;
-  }
+    /**
+     * Scales a maximum point value by an integer percentage
+     * using exact {@link BigDecimal} arithmetic throughout —
+     * no {@code float}/{@code double} intermediate values.
+     */
+    private int scaled(final int max, final int percentage) {
+        return BigDecimal.valueOf(max)
+                .multiply(BigDecimal.valueOf(percentage))
+                .divide(BigDecimal.valueOf(100), RoundingMode.HALF_UP)
+                .intValue();
+    }
+
+    private FactorScore buildScore(
+            final int points, final int max, final String explanation) {
+        return FactorScore.builder()
+                .points(points)
+                .maxPoints(max)
+                .explanation(explanation)
+                .build();
+    }
 }

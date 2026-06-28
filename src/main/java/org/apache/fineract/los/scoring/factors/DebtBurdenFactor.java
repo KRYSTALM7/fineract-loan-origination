@@ -29,92 +29,81 @@ import org.apache.fineract.los.scoring.model.FactorScore;
 import org.springframework.stereotype.Component;
 
 /**
- * Evaluates the applicant's existing debt burden relative to monthly income.
+ * Scores the applicant's existing debt burden — the ratio of
+ * existing loan obligations to monthly income.
  *
- * <p>Computes the Debt-to-Income (DTI) ratio: {@code existingLoanObligations / monthlyIncome}.
- * Lower DTI means less of the applicant's income is already committed to debt, leaving more
- * capacity to service a new loan.
+ * <p>Default weight: 25 points (configurable via
+ * {@code los.scoring.weights.debt-burden}). Thresholds are
+ * configurable via {@code los.scoring.weights.debt-burden-*}.
  *
- * <p>Scoring bands (DTI = existingLoanObligations / monthlyIncome):
+ * <p>This factor is inverse to the others — a higher debt
+ * burden ratio means lower points.
  *
- * <ul>
- *   <li>&le; 0.20 (up to 20% of income committed) &rarr; full points
- *   <li>&le; 0.35 &rarr; 75% of max points
- *   <li>&le; 0.50 &rarr; 50% of max points
- *   <li>&le; 0.65 &rarr; 25% of max points
- *   <li>&gt; 0.65 &rarr; 0 points
- * </ul>
- *
- * <p>If {@code monthlyIncome} is null or zero, scores 0 — cannot compute DTI without income.
- * If {@code existingLoanObligations} is null or zero, the applicant has no existing debt and
- * receives full points.
+ * <p>All arithmetic uses {@link BigDecimal} exclusively. Income
+ * of zero or negative is explicitly guarded to avoid
+ * {@link ArithmeticException} on division — scored as zero
+ * with an explanation rather than crashing the request.
  */
 @Component
 @RequiredArgsConstructor
 public class DebtBurdenFactor implements ScoringFactor {
 
     private static final String FACTOR_NAME = "debt-burden";
+    private static final int SCALE = 4;
 
     private final ScoringWeightsProperties weights;
 
     @Override
-    public FactorScore score(ApplicantScoringProfile profile) {
+    public FactorScore score(final ApplicantScoringProfile profile) {
         final int max = maxPoints();
 
-        BigDecimal income = profile.getMonthlyIncome();
-        BigDecimal obligations = profile.getExistingLoanObligations();
-
-        if (income == null || income.compareTo(BigDecimal.ZERO) <= 0) {
-            return FactorScore.builder()
-                    .points(0)
-                    .maxPoints(max)
-                    .explanation("Cannot evaluate debt burden without monthly income data.")
-                    .build();
+        if (!hasValidIncome(profile)) {
+            return buildScore(
+                    0,
+                    max,
+                    "Monthly income missing or non-positive — debt "
+                            + "burden cannot be assessed, scored as "
+                            + "zero pending complete data.");
         }
 
-        // No existing obligations — clean slate, full points
-        if (obligations == null || obligations.compareTo(BigDecimal.ZERO) <= 0) {
-            return FactorScore.builder()
-                    .points(max)
-                    .maxPoints(max)
-                    .explanation("No existing loan obligations — full debt capacity available.")
-                    .build();
-        }
+        final BigDecimal obligations =
+                profile.getExistingLoanObligations() == null
+                        ? BigDecimal.ZERO
+                        : profile.getExistingLoanObligations();
 
-        // DTI = existingObligations / monthlyIncome
-        BigDecimal dti = obligations.divide(income, 4, RoundingMode.HALF_UP);
-        double d = dti.doubleValue();
+        final BigDecimal ratio = obligations.divide(
+                profile.getMonthlyIncome(), SCALE, RoundingMode.HALF_UP);
 
-        int points;
-        String explanation;
+        final int points;
+        final String tier;
 
-        if (d <= 0.20) {
+        if (ratio.compareTo(weights.getDebtBurdenLowThreshold()) <= 0) {
             points = max;
-            explanation = String.format(
-                    "Debt-to-income ratio of %.0f%% is low — minimal existing debt burden.", d * 100);
-        } else if (d <= 0.35) {
-            points = (int) Math.round(max * 0.75);
-            explanation = String.format(
-                    "Debt-to-income ratio of %.0f%% is manageable.", d * 100);
-        } else if (d <= 0.50) {
-            points = (int) Math.round(max * 0.50);
-            explanation = String.format(
-                    "Debt-to-income ratio of %.0f%% indicates moderate debt burden.", d * 100);
-        } else if (d <= 0.65) {
-            points = (int) Math.round(max * 0.25);
-            explanation = String.format(
-                    "Debt-to-income ratio of %.0f%% indicates high debt burden.", d * 100);
+            tier = "minimal";
+        } else if (ratio.compareTo(
+                weights.getDebtBurdenModerateThreshold()) <= 0) {
+            points = scaled(max, 75);
+            tier = "manageable";
+        } else if (ratio.compareTo(
+                weights.getDebtBurdenHighThreshold()) <= 0) {
+            points = scaled(max, 50);
+            tier = "elevated";
+        } else if (ratio.compareTo(
+                weights.getDebtBurdenSevereThreshold()) <= 0) {
+            points = scaled(max, 25);
+            tier = "high";
         } else {
             points = 0;
-            explanation = String.format(
-                    "Debt-to-income ratio of %.0f%% exceeds safe threshold — very high risk.", d * 100);
+            tier = "overextended";
         }
 
-        return FactorScore.builder()
-                .points(points)
-                .maxPoints(max)
-                .explanation(explanation)
-                .build();
+        return buildScore(
+                points,
+                max,
+                String.format(
+                        "Existing debt burden ratio of %s is %s.",
+                        ratio,
+                        tier));
     }
 
     @Override
@@ -125,5 +114,38 @@ public class DebtBurdenFactor implements ScoringFactor {
     @Override
     public String factorName() {
         return FACTOR_NAME;
+    }
+
+    /**
+     * Guards against division by zero — income must be present
+     * and strictly positive before the ratio is computed.
+     */
+    private boolean hasValidIncome(
+            final ApplicantScoringProfile profile) {
+        return profile.getMonthlyIncome() != null
+                && profile.getMonthlyIncome()
+                        .compareTo(BigDecimal.ZERO) > 0;
+    }
+
+    /**
+     * Scales a maximum point value by an integer percentage
+     * using exact {@link BigDecimal} arithmetic only — avoids
+     * the {@code float}/{@code double} rounding drift
+     * flagged in review.
+     */
+    private int scaled(final int max, final int percentage) {
+        return BigDecimal.valueOf(max)
+                .multiply(BigDecimal.valueOf(percentage))
+                .divide(BigDecimal.valueOf(100), RoundingMode.HALF_UP)
+                .intValue();
+    }
+
+    private FactorScore buildScore(
+            final int points, final int max, final String explanation) {
+        return FactorScore.builder()
+                .points(points)
+                .maxPoints(max)
+                .explanation(explanation)
+                .build();
     }
 }
