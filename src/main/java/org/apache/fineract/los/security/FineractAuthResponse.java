@@ -20,6 +20,7 @@
 package org.apache.fineract.los.security;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -33,10 +34,29 @@ import lombok.Setter;
 @Setter
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class FineractAuthResponse {
+
   private String username;
+
   private Long userId;
+
   private Long clientId;
+
   private String displayName;
+
   private boolean authenticated;
+
   private String base64EncodedAuthenticationKey;
+
+  /** Staff roles returned by Fineract authentication. */
+  private List<FineractRole> roles;
+
+  @Getter
+  @Setter
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public static class FineractRole {
+
+    private Long id;
+
+    private String name;
+  }
 }

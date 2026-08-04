@@ -21,10 +21,13 @@ package org.apache.fineract.los.api;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.apache.fineract.los.domain.CustomerCredential;
 import org.apache.fineract.los.repository.CustomerCredentialRepository;
+import org.apache.fineract.los.security.FineractAuthResponse;
 import org.apache.fineract.los.security.JwtService;
+import org.apache.fineract.los.service.FineractCredentialValidationService;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -41,6 +44,7 @@ public class AuthController {
   private final CustomerCredentialRepository credentialRepository;
   private final PasswordEncoder passwordEncoder;
   private final JwtService jwtService;
+  private final FineractCredentialValidationService fineractCredentialValidationService;
 
   public record LoginRequest(
       @NotBlank String username, @NotBlank String password, @NotBlank String tenantId) {}
@@ -51,29 +55,50 @@ public class AuthController {
   @PostMapping("/login")
   public LoginResponse login(@Valid @RequestBody final LoginRequest request) {
 
-    final CustomerCredential credential =
-        credentialRepository
-            .findByUsername(request.username())
-            .orElseThrow(
-                () -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials"));
+    final Optional<CustomerCredential> customerCredential =
+        credentialRepository.findByUsername(request.username());
 
-    if (!credential.getTenantId().equals(request.tenantId())) {
-      throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
+    if (customerCredential.isPresent()) {
+      final CustomerCredential credential = customerCredential.get();
+
+      if (!credential.getTenantId().equals(request.tenantId())) {
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
+      }
+
+      if (passwordEncoder.matches(request.password(), credential.getPasswordHash())) {
+        final String token =
+            jwtService.generateToken(
+                credential.getUsername(),
+                credential.getFineractClientId(),
+                credential.getTenantId());
+
+        return new LoginResponse(
+            token,
+            credential.getUsername(),
+            credential.getFineractClientId(),
+            credential.getTenantId(),
+            15);
+      }
     }
 
-    if (!passwordEncoder.matches(request.password(), credential.getPasswordHash())) {
-      throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
+    final FineractAuthResponse fineractResponse =
+        fineractCredentialValidationService.validate(request.username(), request.password());
+
+    if (fineractResponse != null && fineractResponse.isAuthenticated()) {
+      final String token =
+          jwtService.generateToken(
+              request.username(),
+              fineractResponse.getUserId() != null ? fineractResponse.getUserId() : 0L,
+              request.tenantId());
+
+      return new LoginResponse(
+          token,
+          request.username(),
+          fineractResponse.getUserId() != null ? fineractResponse.getUserId() : 0L,
+          request.tenantId(),
+          15);
     }
 
-    final String token =
-        jwtService.generateToken(
-            credential.getUsername(), credential.getFineractClientId(), credential.getTenantId());
-
-    return new LoginResponse(
-        token,
-        credential.getUsername(),
-        credential.getFineractClientId(),
-        credential.getTenantId(),
-        15);
+    throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
   }
 }

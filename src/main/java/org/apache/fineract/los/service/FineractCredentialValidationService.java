@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.fineract.los.infrastructure.fineract.FineractAuthResponse;
+import org.apache.fineract.los.security.FineractAuthResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -46,21 +46,19 @@ public class FineractCredentialValidationService {
   @Value("${los.fineract.tenant-id}")
   private String tenantId;
 
-  public FineractAuthResponse validate(String username, String password) {
-
+  public FineractAuthResponse validate(final String username, final String password) {
     try {
-
-      HttpHeaders headers = new HttpHeaders();
+      final HttpHeaders headers = new HttpHeaders();
       headers.setContentType(MediaType.APPLICATION_JSON);
       headers.set("Fineract-Platform-TenantId", tenantId);
 
-      Map<String, String> body = new HashMap<>();
+      final Map<String, String> body = new HashMap<>();
       body.put("username", username);
       body.put("password", password);
 
-      HttpEntity<Map<String, String>> request = new HttpEntity<>(body, headers);
+      final HttpEntity<Map<String, String>> request = new HttpEntity<>(body, headers);
 
-      ResponseEntity<FineractAuthResponse> response =
+      final ResponseEntity<FineractAuthResponse> response =
           fineractRestTemplate.exchange(
               fineractBaseUrl + "/fineract-provider/api/v1/authentication",
               HttpMethod.POST,
@@ -70,18 +68,14 @@ public class FineractCredentialValidationService {
       if (response.getStatusCode().is2xxSuccessful()
           && response.getBody() != null
           && response.getBody().isAuthenticated()) {
-
         log.debug("Fineract auth OK for user: {}", username);
         return response.getBody();
       }
 
-    } catch (HttpClientErrorException.Unauthorized e) {
-
+    } catch (final HttpClientErrorException.Unauthorized e) {
       log.debug("Fineract rejected credentials for user: {}", username);
-
-    } catch (Exception e) {
-
-      log.error("Fineract auth call failed", e);
+    } catch (final Exception e) {
+      log.error("Fineract auth call failed for user {}: {}", username, e.getMessage(), e);
     }
 
     return null;
