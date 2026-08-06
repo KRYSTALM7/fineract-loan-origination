@@ -1,0 +1,298 @@
+{
+  "info": {
+    "name": "LOS Authentication",
+    "_postman_id": "los-auth-collection-v1",
+    "description": "Separate login flows for admin/staff and customer accounts in the Fineract Loan Origination Service.\n\nTest accounts (after running dev-seed-users.sql):\n  admin    / Admin@123    → ROLE_ADMIN  (staff login)\n  staff    / Staff@123    → ROLE_STAFF  (staff login)\n  customer / Customer@123 → ROLE_CUSTOMER (customer login)\n\nThe token returned from each login is automatically saved to a collection variable and used by subsequent requests.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl",       "value": "http://localhost:8082/api/v1", "type": "string" },
+    { "key": "tenantId",      "value": "default",                      "type": "string" },
+    { "key": "staffToken",    "value": "",                             "type": "string" },
+    { "key": "customerToken", "value": "",                             "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Staff & Admin Login",
+      "item": [
+        {
+          "name": "Login as admin (ROLE_ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Token present', () => pm.expect(res.token).to.be.a('string').and.not.empty);",
+                  "pm.test('userType is STAFF', () => pm.expect(res.userType).to.eql('STAFF'));",
+                  "pm.test('role is ROLE_ADMIN', () => pm.expect(res.role).to.eql('ROLE_ADMIN'));",
+                  "pm.collectionVariables.set('staffToken', res.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/staff/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"Admin@123\",\n  \"tenantId\": \"{{tenantId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login as staff loan officer (ROLE_STAFF)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Token present', () => pm.expect(res.token).to.be.a('string').and.not.empty);",
+                  "pm.test('userType is STAFF', () => pm.expect(res.userType).to.eql('STAFF'));",
+                  "pm.test('role is ROLE_STAFF', () => pm.expect(res.role).to.eql('ROLE_STAFF'));",
+                  "pm.collectionVariables.set('staffToken', res.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/staff/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"staff\",\n  \"password\": \"Staff@123\",\n  \"tenantId\": \"{{tenantId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login with wrong password (expect 401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/staff/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"wrongpassword\",\n  \"tenantId\": \"{{tenantId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get current staff profile (uses staffToken)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const res = pm.response.json();",
+                  "pm.test('username present', () => pm.expect(res.username).to.be.a('string').and.not.empty);",
+                  "pm.test('losRole present', () => pm.expect(res.losRole).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{staffToken}}" },
+              { "key": "Fineract-Platform-TenantId", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/staff/me"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Customer Login",
+      "item": [
+        {
+          "name": "Login as customer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Token present', () => pm.expect(res.token).to.be.a('string').and.not.empty);",
+                  "pm.test('userType is CUSTOMER', () => pm.expect(res.userType).to.eql('CUSTOMER'));",
+                  "pm.test('role is ROLE_CUSTOMER', () => pm.expect(res.role).to.eql('ROLE_CUSTOMER'));",
+                  "pm.collectionVariables.set('customerToken', res.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"customer\",\n  \"password\": \"Customer@123\",\n  \"tenantId\": \"{{tenantId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login with wrong password (expect 401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"customer\",\n  \"password\": \"wrongpassword\",\n  \"tenantId\": \"{{tenantId}}\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin — Staff Management",
+      "item": [
+        {
+          "name": "List all staff (admin token required)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{staffToken}}" },
+              { "key": "Fineract-Platform-TenantId", "value": "{{tenantId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/staff?tenantId={{tenantId}}",
+              "query": [{ "key": "tenantId", "value": "{{tenantId}}" }]
+            }
+          }
+        },
+        {
+          "name": "Create new staff account",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const res = pm.response.json();",
+                  "pm.test('id present', () => pm.expect(res.id).to.be.a('number'));",
+                  "pm.collectionVariables.set('newStaffId', res.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{staffToken}}" },
+              { "key": "Fineract-Platform-TenantId", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/admin/staff",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"officer1\",\n  \"password\": \"Officer@123\",\n  \"email\": \"officer1@localhost\",\n  \"role\": \"ROLE_STAFF\",\n  \"tenantId\": \"{{tenantId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Deactivate staff account",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{staffToken}}" },
+              { "key": "Fineract-Platform-TenantId", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/admin/staff/{{newStaffId}}/deactivate"
+          }
+        },
+        {
+          "name": "Login with deactivated account (expect 401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/staff/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"officer1\",\n  \"password\": \"Officer@123\",\n  \"tenantId\": \"{{tenantId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Reactivate staff account",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{staffToken}}" },
+              { "key": "Fineract-Platform-TenantId", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/admin/staff/{{newStaffId}}/reactivate"
+          }
+        }
+      ]
+    }
+  ]
+}

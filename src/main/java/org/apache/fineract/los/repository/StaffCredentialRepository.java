@@ -17,28 +17,17 @@
  * under the License.
  */
 
-import { HttpInterceptorFn } from '@angular/common/http';
-import { inject } from '@angular/core';
-import { AuthService } from '../services/auth.service';
+package org.apache.fineract.los.repository;
 
-/** Attaches Bearer JWT token and the caller's tenant ID to every outgoing request. */
-export const authInterceptor: HttpInterceptorFn = (req, next) => {
-  const authService = inject(AuthService);
-  const authHeader = authService.getAuthHeader();
+import java.util.Optional;
+import org.apache.fineract.los.domain.StaffCredential;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-  if (!authHeader) return next(req);
+public interface StaffCredentialRepository extends JpaRepository<StaffCredential, Long> {
 
-  // Skip if another interceptor (e.g. staffAuthInterceptor) already set Authorization
-  if (req.headers.has('Authorization')) return next(req);
+  Optional<StaffCredential> findByUsernameAndActiveTrue(String username);
 
-  const tenantId = authService.getTenantId();
+  Optional<StaffCredential> findByUsername(String username);
 
-  return next(
-    req.clone({
-      setHeaders: {
-        Authorization: authHeader,
-        'X-Fineract-Platform-TenantId': tenantId,
-      },
-    }),
-  );
-};
+  boolean existsByUsernameAndTenantId(String username, String tenantId);
+}
