@@ -45,3 +45,6 @@ frontend/coverage/
 
 memory.md
 rat-report.txt
+postman/
+scripts/
+src/main/resources/db/seed/
