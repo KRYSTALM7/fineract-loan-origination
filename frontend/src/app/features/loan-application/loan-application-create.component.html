@@ -23,12 +23,15 @@
   <p class="subtitle">Fill in the loan and applicant details below to start the review process.</p>
 </div>
 
-<form [formGroup]="form" (ngSubmit)="submit()" class="application-form">
+<form class="application-form" [formGroup]="form" (ngSubmit)="submit()">
   <fieldset>
     <legend>Loan Details</legend>
     <div class="field-grid">
       <label>
-        <span>Requested Amount <span class="required">*</span></span>
+        <span>
+          Requested Amount
+          <span class="required">*</span>
+        </span>
         <input
           type="number"
           formControlName="requestedAmount"
@@ -58,7 +61,10 @@
       </label>
 
       <label>
-        <span>Tenor (months) <span class="required">*</span></span>
+        <span>
+          Tenor (months)
+          <span class="required">*</span>
+        </span>
         <input type="number" formControlName="tenorMonths" min="1" />
       </label>
 
@@ -73,7 +79,10 @@
     <legend>Applicant Details</legend>
     <div class="field-grid">
       <label class="span-2">
-        <span>Full Name <span class="required">*</span></span>
+        <span>
+          Full Name
+          <span class="required">*</span>
+        </span>
         <input formControlName="fullName" placeholder="e.g. John Doe" />
       </label>
 
@@ -119,7 +128,7 @@
   }
 
   <div class="form-actions">
-    <button type="submit" [disabled]="form.invalid || submitting()">
+    <button [disabled]="form.invalid || submitting()" type="submit">
       {{ submitting() ? 'Creating…' : 'Create Application' }}
     </button>
   </div>

@@ -44,7 +44,7 @@
   @if (application()!.status === 'DRAFT') {
     <section class="lifecycle-actions">
       <h2>Actions</h2>
-      <button (click)="submitApplication()" [disabled]="actionInFlight()">
+      <button [disabled]="actionInFlight()" (click)="submitApplication()">
         {{ actionInFlight() ? 'Submitting…' : 'Submit Application' }}
       </button>
       @if (actionError()) {

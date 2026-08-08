@@ -34,7 +34,9 @@ import org.springframework.util.CollectionUtils;
 public class ApprovalWorkflowProperties {
 
   /** Ordered approval stages. */
-  private List<String> stages = new java.util.ArrayList<>(java.util.List.of("LOAN_OFFICER", "CREDIT_COMMITTEE", "BRANCH_MANAGER"));
+  private List<String> stages =
+      new java.util.ArrayList<>(
+          java.util.List.of("LOAN_OFFICER", "CREDIT_COMMITTEE", "BRANCH_MANAGER"));
 
   /**
    * Maps Fineract role names to LOS workflow stages.

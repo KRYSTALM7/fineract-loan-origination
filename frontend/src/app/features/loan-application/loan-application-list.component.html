@@ -20,7 +20,7 @@
 -->
 <div class="list-header">
   <h1>Loan Applications</h1>
-  <a routerLink="/apply" class="button">New Application</a>
+  <a class="button" routerLink="/apply">New Application</a>
 </div>
 
 @if (loading()) {
@@ -42,7 +42,7 @@
     </thead>
     <tbody>
       @for (app of applications(); track app.applicationRef) {
-        <tr [routerLink]="['/loan-application', app.applicationRef]" class="row-link">
+        <tr class="row-link" [routerLink]="['/loan-application', app.applicationRef]">
           <td>{{ app.applicationRef }}</td>
           <td class="status-{{ app.status.toLowerCase() }}">{{ app.status }}</td>
           <td>{{ app.requestedAmount }} {{ app.currency }}</td>

@@ -45,10 +45,12 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * Admin-only endpoints for managing LOS staff accounts.
  *
- * <p>All endpoints require {@code ROLE_ADMIN}. Staff accounts created here can log in via
- * {@code POST /api/v1/auth/staff/login} and receive a LOS-issued JWT token.
+ * <p>All endpoints require {@code ROLE_ADMIN}. Staff accounts created here can log in via {@code
+ * POST /api/v1/auth/staff/login} and receive a LOS-issued JWT token.
  */
-@Tag(name = "Admin — Staff Management", description = "Create, list, update, and deactivate staff accounts")
+@Tag(
+    name = "Admin — Staff Management",
+    description = "Create, list, update, and deactivate staff accounts")
 @RestController
 @RequestMapping("/api/v1/admin/staff")
 @RequiredArgsConstructor
@@ -123,9 +125,7 @@ public class AdminStaffController {
   @GetMapping
   @PreAuthorize("hasRole('ADMIN')")
   public List<StaffResponse> listStaff(@RequestParam final String tenantId) {
-    return staffManagementService.listStaff(tenantId).stream()
-        .map(StaffResponse::from)
-        .toList();
+    return staffManagementService.listStaff(tenantId).stream().map(StaffResponse::from).toList();
   }
 
   @Operation(summary = "Update a staff account's email, role, or password")
@@ -134,8 +134,7 @@ public class AdminStaffController {
   public StaffResponse updateStaff(
       @PathVariable final Long id, @Valid @RequestBody final UpdateStaffRequest request) {
     final StaffCredential updated =
-        staffManagementService.updateStaff(
-            id, request.email(), request.role(), request.password());
+        staffManagementService.updateStaff(id, request.email(), request.role(), request.password());
     return StaffResponse.from(updated);
   }
 

@@ -33,10 +33,11 @@ import org.springframework.web.bind.annotation.RestController;
  * REST API exposing information about the currently authenticated staff member.
  *
  * <p>Works for both authentication methods:
+ *
  * <ul>
- *   <li>JWT tokens issued by {@code POST /api/v1/auth/staff/login} (local staff DB)</li>
+ *   <li>JWT tokens issued by {@code POST /api/v1/auth/staff/login} (local staff DB)
  *   <li>Fineract Basic Auth credentials (delegated to Fineract via {@link
- *       org.apache.fineract.los.security.FineractAuthenticationProvider})</li>
+ *       org.apache.fineract.los.security.FineractAuthenticationProvider})
  * </ul>
  *
  * <p>The returned LOS workflow role is derived from the authenticated Spring Security principal's

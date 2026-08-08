@@ -21,17 +21,17 @@
 <div class="shell">
   <aside class="sidebar" [class.collapsed]="sidebarCollapsed()">
     <div class="brand">
-      <img src="fineract_logo.png" alt="Apache Fineract" class="brand-logo" />
+      <img class="brand-logo" src="fineract_logo.png" alt="Apache Fineract" />
       @if (!sidebarCollapsed()) {
         <span class="brand-name">Apache Fineract</span>
       }
       <button
         class="collapse-toggle"
-        type="button"
-        (click)="toggleSidebar()"
         [attr.aria-label]="sidebarCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
+        (click)="toggleSidebar()"
+        type="button"
       >
-        <svg viewBox="0 0 16 16" width="14" height="14" [class.flipped]="sidebarCollapsed()">
+        <svg [class.flipped]="sidebarCollapsed()" viewBox="0 0 16 16" width="14" height="14">
           <path
             d="M10 2 L5 8 L10 14"
             stroke="currentColor"
@@ -48,10 +48,10 @@
       @for (item of navItems; track item.path) {
         @if (item.enabled) {
           <a
-            [routerLink]="item.path"
-            routerLinkActive="active"
             class="nav-item"
+            [routerLink]="item.path"
             [attr.data-tooltip]="sidebarCollapsed() ? item.label : null"
+            routerLinkActive="active"
           >
             <span class="nav-icon">
               @switch (item.icon) {
@@ -218,8 +218,6 @@
     <div class="sidebar-footer">
       <button
         class="theme-toggle"
-        type="button"
-        (click)="toggleTheme()"
         [attr.data-tooltip]="
           sidebarCollapsed()
             ? themeService.theme() === 'dark'
@@ -227,6 +225,8 @@
               : 'Dark theme'
             : null
         "
+        (click)="toggleTheme()"
+        type="button"
       >
         @if (themeService.theme() === 'dark') {
           <svg
@@ -261,8 +261,8 @@
       }
       <button
         class="logout-button"
-        (click)="logout()"
         [attr.data-tooltip]="sidebarCollapsed() ? 'Sign out' : null"
+        (click)="logout()"
       >
         @if (!sidebarCollapsed()) {
           Sign out

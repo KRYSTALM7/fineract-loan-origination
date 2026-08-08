@@ -34,8 +34,8 @@ import org.springframework.web.server.ResponseStatusException;
 /**
  * Service layer for creating and managing LOS staff accounts.
  *
- * <p>Staff accounts are stored locally in the {@code staff_credentials} table and authenticated
- * via BCrypt password hashing — independent of Fineract's user store.
+ * <p>Staff accounts are stored locally in the {@code staff_credentials} table and authenticated via
+ * BCrypt password hashing — independent of Fineract's user store.
  */
 @Slf4j
 @Service

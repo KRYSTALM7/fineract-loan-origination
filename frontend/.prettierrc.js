@@ -17,21 +17,19 @@
  * under the License.
  */
 
-// Shared loan-application status badge colors.
-// Anything that isn't already themed via --color-* CSS variables lives here,
-// so a palette change is a one-file edit instead of a repo-wide grep.
-
-$status-draft-bg: #eceef1;
-$status-draft-text: #4b5563;
-
-$status-submitted-bg: #e5edff;
-$status-submitted-text: #2952e3;
-
-$status-under-review-bg: #fff6e0;
-$status-under-review-text: #92700f;
-
-$status-referred-bg: #f3e8ff;
-$status-referred-text: #7e22ce;
-
-$status-disbursed-bg: #dcfce7;
-$status-disbursed-text: #15803d;
+module.exports = {
+  singleQuote: true,
+  semi: true,
+  printWidth: 100,
+  trailingComma: 'all',
+  htmlWhitespaceSensitivity: 'ignore',
+  plugins: ['prettier-plugin-organize-attributes'],
+  overrides: [
+    {
+      files: '*.html',
+      options: {
+        parser: 'angular',
+      },
+    },
+  ],
+};

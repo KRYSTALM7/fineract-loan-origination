@@ -35,14 +35,14 @@ public class FineractAuthResponse {
   private boolean authenticated;
 
   /**
-   * Fineract role objects assigned to this user.
-   * Each role has an id, name (e.g. "loan_officer"), and description.
+   * Fineract role objects assigned to this user. Each role has an id, name (e.g. "loan_officer"),
+   * and description.
    */
   private List<FineractRole> roles;
 
   /**
-   * Fineract raw permission codes (e.g. "CREATE_CLIENT").
-   * These are action-level permissions, NOT role names — do not use for role mapping.
+   * Fineract raw permission codes (e.g. "CREATE_CLIENT"). These are action-level permissions, NOT
+   * role names — do not use for role mapping.
    */
   private List<String> permissions;
 

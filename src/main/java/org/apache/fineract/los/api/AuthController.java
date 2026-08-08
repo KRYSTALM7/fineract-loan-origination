@@ -43,12 +43,12 @@ import org.springframework.web.server.ResponseStatusException;
  * <p>Customer login: validates credentials against the local {@code customer_credentials} table
  * using BCrypt; issues a LOS JWT with {@code userType=CUSTOMER}.
  *
- * <p>Staff login: delegates credential validation to Fineract
- * ({@code POST /fineract-provider/api/v1/authentication}). On success the Fineract role names
- * returned in the response are mapped to LOS workflow roles via
- * {@link ApprovalWorkflowProperties#stageForFineractRole(String)}, and a LOS JWT is issued with
- * {@code userType=STAFF} and the resolved {@code role} (e.g. {@code ROLE_LOAN_OFFICER}).
- * No staff passwords are ever stored in LOS.
+ * <p>Staff login: delegates credential validation to Fineract ({@code POST
+ * /fineract-provider/api/v1/authentication}). On success the Fineract role names returned in the
+ * response are mapped to LOS workflow roles via {@link
+ * ApprovalWorkflowProperties#stageForFineractRole(String)}, and a LOS JWT is issued with {@code
+ * userType=STAFF} and the resolved {@code role} (e.g. {@code ROLE_LOAN_OFFICER}). No staff
+ * passwords are ever stored in LOS.
  */
 @Slf4j
 @RestController
@@ -137,12 +137,13 @@ public class AuthController {
    * Authenticates a staff member against Fineract and issues a LOS JWT.
    *
    * <p>Flow:
+   *
    * <ol>
-   *   <li>POST the credentials to Fineract {@code /api/v1/authentication}.</li>
-   *   <li>Fineract returns its granted permissions/roles for this user.</li>
-   *   <li>We look for any permission that maps to an LOS workflow stage via
-   *       {@code los.workflow.role-mapping} (e.g. {@code loan_officer -> LOAN_OFFICER}).</li>
-   *   <li>Issue a JWT with {@code role=ROLE_<LOS_STAGE>} and {@code userType=STAFF}.</li>
+   *   <li>POST the credentials to Fineract {@code /api/v1/authentication}.
+   *   <li>Fineract returns its granted permissions/roles for this user.
+   *   <li>We look for any permission that maps to an LOS workflow stage via {@code
+   *       los.workflow.role-mapping} (e.g. {@code loan_officer -> LOAN_OFFICER}).
+   *   <li>Issue a JWT with {@code role=ROLE_<LOS_STAGE>} and {@code userType=STAFF}.
    * </ol>
    *
    * <p>If Fineract cannot authenticate the user, or the user has no mapped LOS role, a 401 is
@@ -156,7 +157,8 @@ public class AuthController {
         fineractValidationService.validate(request.username(), request.password());
 
     if (fineractResponse == null || !fineractResponse.isAuthenticated()) {
-      log.warn("Staff login failed (Fineract rejected credentials): username={}", request.username());
+      log.warn(
+          "Staff login failed (Fineract rejected credentials): username={}", request.username());
       throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
     }
 
@@ -177,21 +179,16 @@ public class AuthController {
     // Step 3: issue LOS JWT — role stored as ROLE_<STAGE> e.g. ROLE_LOAN_OFFICER
     final String jwtRole = "ROLE_" + losStage;
     final String token =
-        jwtService.generateToken(
-            request.username(), null, request.tenantId(), jwtRole, "STAFF");
+        jwtService.generateToken(request.username(), null, request.tenantId(), jwtRole, "STAFF");
 
     log.info(
         "Staff login successful: username={} losRole={} tenantId={}",
-        request.username(), jwtRole, request.tenantId());
-
-    return new StaffLoginResponse(
-        token,
         request.username(),
         jwtRole,
-        displayName(losStage),
-        request.tenantId(),
-        "STAFF",
-        15);
+        request.tenantId());
+
+    return new StaffLoginResponse(
+        token, request.username(), jwtRole, displayName(losStage), request.tenantId(), "STAFF", 15);
   }
 
   // -------------------------------------------------------------------------
@@ -202,9 +199,9 @@ public class AuthController {
    * Resolves the LOS stage from the Fineract auth response.
    *
    * <p>Fineract returns the user's assigned roles in a {@code roles} array, where each entry has a
-   * {@code name} field (e.g. "loan_officer"). We check those names against the configured
-   * {@code los.workflow.role-mapping}. The raw {@code permissions} array contains action-level
-   * permission codes like "CREATE_CLIENT" — those are never role names.
+   * {@code name} field (e.g. "loan_officer"). We check those names against the configured {@code
+   * los.workflow.role-mapping}. The raw {@code permissions} array contains action-level permission
+   * codes like "CREATE_CLIENT" — those are never role names.
    */
   private String resolvelosStage(final FineractAuthResponse fineractResponse) {
     // Primary: check role names (e.g. "loan_officer", "credit_committee", "branch_manager")
@@ -217,7 +214,8 @@ public class AuthController {
         if (stage != null) return stage;
       }
     }
-    log.warn("No LOS stage found. roleMapping keys={}", workflowProperties.getRoleMapping().keySet());
+    log.warn(
+        "No LOS stage found. roleMapping keys={}", workflowProperties.getRoleMapping().keySet());
     return null;
   }
 

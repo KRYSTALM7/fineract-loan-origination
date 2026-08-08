@@ -43,9 +43,11 @@
 } @else {
   <div class="loan-cards">
     @for (loan of loans; track loan.applicationRef) {
-      <a [routerLink]="['/loan-application', loan.applicationRef]" class="loan-card">
+      <a class="loan-card" [routerLink]="['/loan-application', loan.applicationRef]">
         <span class="loan-ref">{{ loan.applicationRef }}</span>
-        <span class="loan-amount">{{ loan.requestedAmount | number:'1.2-2' }} {{ loan.currency }}</span>
+        <span class="loan-amount">
+          {{ loan.requestedAmount | number: '1.2-2' }} {{ loan.currency }}
+        </span>
         <span class="loan-meta">{{ loan.tenorMonths }} months · {{ loan.loanPurpose }}</span>
       </a>
     }

@@ -173,8 +173,8 @@ public class LoanApplicationService {
   /**
    * Assembles the full staff detail view for a single application.
    *
-   * <p>Combines LoanApplication + ApplicantProfile + CreditScore + ApprovalStages into one
-   * {@link StaffApplicationDetailResponse} so the staff dashboard needs only one API call.
+   * <p>Combines LoanApplication + ApplicantProfile + CreditScore + ApprovalStages into one {@link
+   * StaffApplicationDetailResponse} so the staff dashboard needs only one API call.
    *
    * @param applicationRef human-readable application reference
    * @param tenantId institution identifier
@@ -188,40 +188,42 @@ public class LoanApplicationService {
     final ApplicantProfile profile = getProfileOrThrow(app);
 
     // Credit score — may be null if the application hasn't reached UNDER_REVIEW yet
-    final org.apache.fineract.los.api.dto.response.StaffApplicationDetailResponse.CreditScoreSummary creditScoreSummary =
-        creditScoringService
-            .findExistingScore(app)
-            .map(
-                cs ->
-                    org.apache.fineract.los.api.dto.response.StaffApplicationDetailResponse.CreditScoreSummary
-                        .builder()
-                        .score(cs.getScore())
-                        .riskRating(cs.getRiskCategory())
-                        .incomeRatioScore(cs.getIncomeRatioScore())
-                        .debtBurdenScore(cs.getDebtBurdenScore())
-                        .employmentScore(cs.getEmploymentScore())
-                        .repaymentHistoryScore(cs.getRepaymentHistoryScore())
-                        .loanPurposeScore(cs.getLoanPurposeScore())
-                        .scoredAt(cs.getScoredAt())
-                        .build())
-            .orElse(null);
+    final org.apache.fineract.los.api.dto.response.StaffApplicationDetailResponse.CreditScoreSummary
+        creditScoreSummary =
+            creditScoringService
+                .findExistingScore(app)
+                .map(
+                    cs ->
+                        org.apache.fineract.los.api.dto.response.StaffApplicationDetailResponse
+                            .CreditScoreSummary.builder()
+                            .score(cs.getScore())
+                            .riskRating(cs.getRiskCategory())
+                            .incomeRatioScore(cs.getIncomeRatioScore())
+                            .debtBurdenScore(cs.getDebtBurdenScore())
+                            .employmentScore(cs.getEmploymentScore())
+                            .repaymentHistoryScore(cs.getRepaymentHistoryScore())
+                            .loanPurposeScore(cs.getLoanPurposeScore())
+                            .scoredAt(cs.getScoredAt())
+                            .build())
+                .orElse(null);
 
     // Approval history
-    final java.util.List<org.apache.fineract.los.api.dto.response.StaffApplicationDetailResponse.ApprovalStageSummary> stages =
-        approvalStageRepository
-            .findAllByApplicationOrderByCreatedAtAsc(app)
-            .stream()
-            .map(
-                s ->
-                    org.apache.fineract.los.api.dto.response.StaffApplicationDetailResponse.ApprovalStageSummary
-                        .builder()
-                        .stage(s.getStageName())
-                        .decision(s.getDecision() != null ? s.getDecision().name() : null)
-                        .decidedBy(s.getAssignedOfficer())
-                        .decidedAt(s.getDecidedAt())
-                        .notes(s.getComments())
-                        .build())
-            .toList();
+    final java.util.List<
+            org.apache.fineract.los.api.dto.response.StaffApplicationDetailResponse
+                .ApprovalStageSummary>
+        stages =
+            approvalStageRepository.findAllByApplicationOrderByCreatedAtAsc(app).stream()
+                .map(
+                    s ->
+                        org.apache.fineract.los.api.dto.response.StaffApplicationDetailResponse
+                            .ApprovalStageSummary.builder()
+                            .stage(s.getStageName())
+                            .decision(s.getDecision() != null ? s.getDecision().name() : null)
+                            .decidedBy(s.getAssignedOfficer())
+                            .decidedAt(s.getDecidedAt())
+                            .notes(s.getComments())
+                            .build())
+                .toList();
 
     return org.apache.fineract.los.api.dto.response.StaffApplicationDetailResponse.builder()
         .applicationRef(app.getApplicationRef())
@@ -242,8 +244,10 @@ public class LoanApplicationService {
         .creditScore(creditScoreSummary)
         .approvalStages(stages)
         .fineractLoanId(app.getFineractLoanId())
-        .disbursedAt(app.getStatus() == org.apache.fineract.los.domain.enums.LoanApplicationStatus.DISBURSED
-            ? app.getUpdatedAt() : null)
+        .disbursedAt(
+            app.getStatus() == org.apache.fineract.los.domain.enums.LoanApplicationStatus.DISBURSED
+                ? app.getUpdatedAt()
+                : null)
         .build();
   }
 

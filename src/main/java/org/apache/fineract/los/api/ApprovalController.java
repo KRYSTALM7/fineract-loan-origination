@@ -32,6 +32,7 @@ import org.apache.fineract.los.service.ApprovalWorkflowService;
 import org.apache.fineract.los.service.LoanApplicationService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -69,6 +70,7 @@ public class ApprovalController {
 
   @Operation(summary = "List approval history for an application")
   @GetMapping
+  @PreAuthorize("hasRole('STAFF')")
   public List<ApprovalStage> getHistory(
       @RequestHeader(value = TENANT_HEADER, defaultValue = DEFAULT_TENANT) final String tenantId,
       @PathVariable final String applicationRef) {
@@ -84,6 +86,7 @@ public class ApprovalController {
           "Record an APPROVE, REJECT, or REFER decision for the application's current workflow "
               + "stage as the authenticated staff member")
   @PostMapping
+  @PreAuthorize("hasRole('STAFF')")
   public ResponseEntity<ApprovalStage> recordDecision(
       @RequestHeader(value = TENANT_HEADER, defaultValue = DEFAULT_TENANT) final String tenantId,
       @PathVariable final String applicationRef,

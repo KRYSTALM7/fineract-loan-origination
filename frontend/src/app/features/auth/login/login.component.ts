@@ -30,7 +30,7 @@ import { AuthService } from '../../../core/services/auth.service';
     <div class="login-page">
       <div class="login-card">
         <div class="login-header">
-          <img src="fineract_logo.png" alt="Apache Fineract" class="logo" />
+          <img class="logo" src="fineract_logo.png" alt="Apache Fineract" />
           <h1>Loan Origination</h1>
           <p>Sign in to your account</p>
         </div>
@@ -61,7 +61,7 @@ import { AuthService } from '../../../core/services/auth.service';
             <div class="error-banner">{{ error() }}</div>
           }
 
-          <button type="submit" class="submit-btn" [disabled]="form.invalid || submitting()">
+          <button class="submit-btn" [disabled]="form.invalid || submitting()" type="submit">
             {{ submitting() ? 'Signing in…' : 'Sign in' }}
           </button>
         </form>

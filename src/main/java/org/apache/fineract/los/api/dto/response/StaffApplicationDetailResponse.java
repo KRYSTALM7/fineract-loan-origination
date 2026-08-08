@@ -30,9 +30,9 @@ import org.apache.fineract.los.domain.enums.RiskCategory;
 /**
  * Rich application detail response for staff dashboards.
  *
- * <p>Combines data from {@code LoanApplication}, {@code ApplicantProfile}, {@code CreditScore},
- * and {@code ApprovalStage} into a single response so the frontend makes one request per detail
- * page instead of four.
+ * <p>Combines data from {@code LoanApplication}, {@code ApplicantProfile}, {@code CreditScore}, and
+ * {@code ApprovalStage} into a single response so the frontend makes one request per detail page
+ * instead of four.
  */
 @Getter
 @Builder
@@ -45,7 +45,7 @@ public class StaffApplicationDetailResponse {
   private final String currency;
   private final String loanPurpose;
   private final Integer tenorMonths;
-  private final LocalDateTime submittedAt;   // createdAt of the application (first saved)
+  private final LocalDateTime submittedAt; // createdAt of the application (first saved)
   private final LocalDateTime updatedAt;
 
   // ---- Applicant ----
