@@ -31,7 +31,7 @@ export class LoanApplicationService {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthService);
 
-  private authHeaders(): { [header: string]: string } {
+  private authHeaders(): Record<string, string> {
     const token    = this.auth.getAuthHeader();
     const tenantId = this.auth.getTenantId();
     return {
