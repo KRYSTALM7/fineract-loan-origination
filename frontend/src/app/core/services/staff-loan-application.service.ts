@@ -33,7 +33,7 @@ export class StaffLoanApplicationService {
   private readonly staffAuth = inject(StaffAuthService);
 
   /** Build auth headers directly — belt-and-suspenders alongside the interceptor. */
-  private authHeaders(): { [header: string]: string } {
+  private authHeaders(): Record<string, string> {
     const token    = this.staffAuth.getAuthHeader();
     const tenantId = this.staffAuth.getTenantId();
     return {
