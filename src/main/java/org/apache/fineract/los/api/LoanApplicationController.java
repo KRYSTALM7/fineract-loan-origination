@@ -30,6 +30,7 @@ import org.apache.fineract.los.domain.LoanApplication;
 import org.apache.fineract.los.dto.request.CreateLoanApplicationRequest;
 import org.apache.fineract.los.service.CreditScoringService;
 import org.apache.fineract.los.service.LoanApplicationService;
+import org.apache.fineract.los.validation.ValidApplicationRef;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -84,7 +85,7 @@ public class LoanApplicationController {
   @GetMapping("/{applicationRef}")
   public LoanApplicationResponse getByRef(
       @RequestHeader(value = TENANT_HEADER, defaultValue = DEFAULT_TENANT) final String tenantId,
-      @PathVariable final String applicationRef) {
+      @PathVariable @ValidApplicationRef final String applicationRef) {
 
     return LoanApplicationResponse.from(
         loanApplicationService.getApplicationOrThrow(applicationRef, tenantId));
@@ -94,7 +95,7 @@ public class LoanApplicationController {
   @PostMapping("/{applicationRef}/submit")
   public LoanApplicationResponse submit(
       @RequestHeader(value = TENANT_HEADER, defaultValue = DEFAULT_TENANT) final String tenantId,
-      @PathVariable final String applicationRef) {
+      @PathVariable @ValidApplicationRef final String applicationRef) {
 
     return LoanApplicationResponse.from(loanApplicationService.submit(applicationRef, tenantId));
   }
@@ -106,7 +107,7 @@ public class LoanApplicationController {
   @PostMapping("/{applicationRef}/start-review")
   public LoanApplicationResponse startReview(
       @RequestHeader(value = TENANT_HEADER, defaultValue = DEFAULT_TENANT) final String tenantId,
-      @PathVariable final String applicationRef) {
+      @PathVariable @ValidApplicationRef final String applicationRef) {
 
     return LoanApplicationResponse.from(
         loanApplicationService.moveToUnderReview(applicationRef, tenantId));
@@ -116,7 +117,7 @@ public class LoanApplicationController {
   @GetMapping("/{applicationRef}/credit-score")
   public CreditScoreResponse getCreditScore(
       @RequestHeader(value = TENANT_HEADER, defaultValue = DEFAULT_TENANT) final String tenantId,
-      @PathVariable final String applicationRef) {
+      @PathVariable @ValidApplicationRef final String applicationRef) {
 
     final LoanApplication application =
         loanApplicationService.getApplicationOrThrow(applicationRef, tenantId);

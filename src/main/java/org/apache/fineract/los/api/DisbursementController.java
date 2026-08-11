@@ -24,6 +24,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.apache.fineract.los.bridge.DisbursementBridgeService;
 import org.apache.fineract.los.bridge.dto.FineractLoanCreateResponse;
+import org.apache.fineract.los.validation.ValidApplicationRef;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -51,7 +52,7 @@ public class DisbursementController {
   @PostMapping
   public FineractLoanCreateResponse disburse(
       @RequestHeader(value = TENANT_HEADER, defaultValue = DEFAULT_TENANT) final String tenantId,
-      @PathVariable final String applicationRef) {
+      @PathVariable @ValidApplicationRef final String applicationRef) {
 
     return disbursementBridgeService.disburse(applicationRef, tenantId);
   }
