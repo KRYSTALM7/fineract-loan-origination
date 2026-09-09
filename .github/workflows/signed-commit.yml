@@ -1,0 +1,128 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+name: Signed Commits
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  verify-signed-commits:
+    name: Verify Signed Commits
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check commit signatures via GitHub API
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
+        with:
+          script: |
+            const { data: commits } = await github.rest.pulls.listCommits({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+              per_page: 100,
+            });
+
+            const unsigned = commits.filter(c => !c.commit.verification.verified);
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+            });
+
+            const botMarker = '<!-- signed-commit-check -->';
+            const prevComment = comments.find(
+              c => c.user.type === 'Bot' && c.body.includes(botMarker)
+            );
+
+            if (unsigned.length === 0) {
+              if (prevComment) {
+                await github.rest.issues.deleteComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: prevComment.id,
+                });
+              }
+              console.log('All commits are verified.');
+              return;
+            }
+
+            const byReason = {};
+            for (const c of unsigned) {
+              const reason = c.commit.verification.reason ?? 'unknown';
+              (byReason[reason] ??= []).push(c);
+            }
+
+            const reasonBlocks = Object.entries(byReason).map(([reason, cs]) => {
+              const rows = cs.map(c =>
+                '`' + c.sha.slice(0, 8) + '` ' + c.commit.message.split('\n')[0]
+              ).join('\n');
+              return '`' + reason + '`\n' + rows;
+            }).join('\n\n');
+
+            const n = unsigned.length;
+            const total = commits.length;
+            const plural = n === 1 ? ' is' : 's are';
+            const body = [
+              botMarker,
+              '',
+              '| Commits on this pull request are not verified |',
+              '|---|',
+              '| ' + n + ' of ' + total + ' commit' + plural + ' not showing as **Verified** on GitHub, so this pull request cannot be merged into `main` yet. |',
+              '',
+              reasonBlocks,
+              '',
+              '**How to fix:** Set up commit signing, then re-sign the commits already on this branch. [CONTRIBUTING.md](../../blob/main/CONTRIBUTING.md#commit-signing) has the setup.',
+              '',
+              '**Re-signing**',
+              '```bash',
+              '# only for the identity reasons above (no_user / unverified_email):',
+              'git config user.email "you@example.com"  # re-sign every commit on this branch:',
+              "git rebase --exec 'git commit --amend --no-edit --reset-author -S' origin/main",
+              'git push --force-with-lease',
+              '```',
+              '',
+              'Force-pushing is expected here \u2014 re-signing rewrites the commits, so their hashes change.',
+              '',
+              '***',
+              '',
+              'This comment is posted automatically and updates itself when you push; it disappears once every commit verifies. If you believe this is wrong, say so on the pull request \u2014 a maintainer can check.',
+            ].join('\n');
+
+            if (prevComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: prevComment.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body,
+              });
+            }
+
+            core.setFailed(n + ' unsigned commit(s) found.');
