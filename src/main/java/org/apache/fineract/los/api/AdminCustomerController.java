@@ -36,6 +36,9 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 /**
  * Staff-only endpoint for registering customer portal accounts.
  *
@@ -44,6 +47,7 @@ import org.springframework.web.server.ResponseStatusException;
  *
  * <p>Protected by the staff security chain — requires admin credentials.
  */
+@Tag(name = "Admin – Customer Management", description = "Create, list, update, and deactivate customer accounts")
 @RestController
 @RequestMapping("/api/v1/admin/customers")
 @RequiredArgsConstructor
@@ -61,6 +65,7 @@ public class AdminCustomerController {
   public record RegisterCustomerResponse(
       Long id, String username, Long fineractClientId, String tenantId) {}
 
+  @Operation(summary = "Register a customer portal account, linking it to a Fineract client")
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
   @PreAuthorize("hasRole('ADMIN')")

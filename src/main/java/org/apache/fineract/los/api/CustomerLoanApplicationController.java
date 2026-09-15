@@ -42,6 +42,9 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 /**
  * Customer-facing loan application endpoints. Every method scopes results to the authenticated
  * {@link CustomerPrincipal}'s own {@code clientId} — this is the endpoint the Angular customer app
@@ -51,6 +54,8 @@ import org.springframework.web.bind.annotation.RestController;
  * (start-review, approval decisions, disbursement) remain staff-only and live exclusively in {@link
  * LoanApplicationController}.
  */
+
+@Tag(name = "Loan Applications", description = "Customer-facing loan application submission and status")
 @RestController
 @RequestMapping("/api/v1/customer/loan-applications")
 @RequiredArgsConstructor
@@ -64,6 +69,7 @@ public class CustomerLoanApplicationController {
   private final org.apache.fineract.los.repository.ApprovalStageRepository approvalStageRepository;
 
   /** Creates a new application, forcing the applicant's clientId to the caller's own identity. */
+  @Operation(summary = "Create a new loan application, using the authenticated customer's own client ID")
   @PostMapping
   public ResponseEntity<LoanApplicationResponse> create(
       @RequestHeader(value = TENANT_HEADER, defaultValue = DEFAULT_TENANT) final String tenantId,
@@ -79,6 +85,7 @@ public class CustomerLoanApplicationController {
   }
 
   /** Returns only applications owned by the authenticated customer's clientId. */
+  @Operation(summary = "List the authenticated customer's own loan applications")
   @GetMapping
   public List<LoanApplicationResponse> myApplications(
       @RequestHeader(value = TENANT_HEADER, defaultValue = DEFAULT_TENANT) final String tenantId,
@@ -92,6 +99,7 @@ public class CustomerLoanApplicationController {
   }
 
   /** Retrieves a single application by reference — only if it belongs to the caller. */
+  @Operation(summary = "Retrieve a single loan application by reference")
   @GetMapping("/{applicationRef}")
   public LoanApplicationResponse getByRef(
       @RequestHeader(value = TENANT_HEADER, defaultValue = DEFAULT_TENANT) final String tenantId,
@@ -107,6 +115,7 @@ public class CustomerLoanApplicationController {
   }
 
   /** Submits the caller's own DRAFT or REFERRED application: DRAFT/REFERRED -> SUBMITTED. */
+  @Operation(summary = "Submit the caller's own DRAFT or REFERRED application")
   @PostMapping("/{applicationRef}/submit")
   public LoanApplicationResponse submit(
       @RequestHeader(value = TENANT_HEADER, defaultValue = DEFAULT_TENANT) final String tenantId,
@@ -121,6 +130,7 @@ public class CustomerLoanApplicationController {
     return buildResponse(loanApplicationService.submit(applicationRef, tenantId));
   }
 
+  @Operation(summary = "Retrieve the credit score for a loan application")
   @GetMapping("/{applicationRef}/credit-score")
   public CreditScoreResponse creditScore(
       @RequestHeader(value = TENANT_HEADER, defaultValue = DEFAULT_TENANT) final String tenantId,
