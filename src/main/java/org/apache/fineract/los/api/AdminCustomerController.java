@@ -19,6 +19,8 @@
 
 package org.apache.fineract.los.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -44,6 +46,9 @@ import org.springframework.web.server.ResponseStatusException;
  *
  * <p>Protected by the staff security chain — requires admin credentials.
  */
+@Tag(
+    name = "Admin – Customer Management",
+    description = "Create, list, update, and deactivate customer accounts")
 @RestController
 @RequestMapping("/api/v1/admin/customers")
 @RequiredArgsConstructor
@@ -61,6 +66,7 @@ public class AdminCustomerController {
   public record RegisterCustomerResponse(
       Long id, String username, Long fineractClientId, String tenantId) {}
 
+  @Operation(summary = "Register a customer portal account, linking it to a Fineract client")
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
   @PreAuthorize("hasRole('ADMIN')")

@@ -18,6 +18,8 @@
  */
 package org.apache.fineract.los.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -41,6 +43,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
+@Tag(name = "Authentication", description = "Customer and staff login")
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
@@ -90,6 +93,7 @@ public class AuthController {
       String userType,
       int expiresInMinutes) {}
 
+  @Operation(summary = "Authenticate a customer and issue a JWT")
   @PostMapping("/login")
   public ResponseEntity<LoginResponse> login(@Valid @RequestBody final LoginRequest request) {
     final Optional<CustomerCredential> credentialOpt =
@@ -152,6 +156,7 @@ public class AuthController {
    * @param request Staff login credentials
    * @return JWT token with staff role information
    */
+  @Operation(summary = "Authenticate a staff member and issue a JWT with staff role information")
   @PostMapping("/staff/login")
   public ResponseEntity<StaffLoginResponse> staffLogin(
       @Valid @RequestBody final StaffLoginRequest request) {
