@@ -19,6 +19,8 @@
 
 package org.apache.fineract.los.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -42,9 +44,6 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-
 /**
  * Customer-facing loan application endpoints. Every method scopes results to the authenticated
  * {@link CustomerPrincipal}'s own {@code clientId} — this is the endpoint the Angular customer app
@@ -54,8 +53,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
  * (start-review, approval decisions, disbursement) remain staff-only and live exclusively in {@link
  * LoanApplicationController}.
  */
-
-@Tag(name = "Loan Applications", description = "Customer-facing loan application submission and status")
+@Tag(
+    name = "Loan Applications",
+    description = "Customer-facing loan application submission and status")
 @RestController
 @RequestMapping("/api/v1/customer/loan-applications")
 @RequiredArgsConstructor
@@ -69,7 +69,8 @@ public class CustomerLoanApplicationController {
   private final org.apache.fineract.los.repository.ApprovalStageRepository approvalStageRepository;
 
   /** Creates a new application, forcing the applicant's clientId to the caller's own identity. */
-  @Operation(summary = "Create a new loan application, using the authenticated customer's own client ID")
+  @Operation(
+      summary = "Create a new loan application, using the authenticated customer's own client ID")
   @PostMapping
   public ResponseEntity<LoanApplicationResponse> create(
       @RequestHeader(value = TENANT_HEADER, defaultValue = DEFAULT_TENANT) final String tenantId,

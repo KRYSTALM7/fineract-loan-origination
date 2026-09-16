@@ -19,6 +19,8 @@
 
 package org.apache.fineract.los.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -36,9 +38,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-
 /**
  * Staff-only endpoint for registering customer portal accounts.
  *
@@ -47,7 +46,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
  *
  * <p>Protected by the staff security chain — requires admin credentials.
  */
-@Tag(name = "Admin – Customer Management", description = "Create, list, update, and deactivate customer accounts")
+@Tag(
+    name = "Admin – Customer Management",
+    description = "Create, list, update, and deactivate customer accounts")
 @RestController
 @RequestMapping("/api/v1/admin/customers")
 @RequiredArgsConstructor
